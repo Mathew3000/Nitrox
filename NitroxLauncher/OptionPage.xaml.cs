@@ -15,6 +15,8 @@ namespace NitroxLauncher
     {
         private string pathToSubnautica;
 
+        private string extraArguments;
+
         public string PathToSubnautica
         {
             get => pathToSubnautica;
@@ -25,6 +27,17 @@ namespace NitroxLauncher
                 pathToSubnautica = value;
                 OnPropertyChanged();
                 File.WriteAllText("path.txt", value);
+            }
+        }
+
+        public string ExtraArguments
+        {
+            get => extraArguments;
+            set
+            {
+                extraArguments = value;
+                OnPropertyChanged();
+                File.WriteAllText("args.txt", value);
             }
         }
 
