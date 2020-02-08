@@ -26,6 +26,9 @@ namespace NitroxServer.Serialization.World
         private readonly ServerProtobufSerializer serializer;
         private readonly ServerConfig config;
 
+        // debug
+        NitroxDebug nitroxDebug = new NitroxDebug();
+
         public WorldPersistence(ServerProtobufSerializer serializer, ServerConfig config)
         {
             this.serializer = serializer;
@@ -76,6 +79,11 @@ namespace NitroxServer.Serialization.World
             {
                 Log.Info("Could not save world: " + ex);
             }
+
+            nitroxDebug.SaveEntity(world);
+            nitroxDebug.SaveBatchCells(world);
+            nitroxDebug.SaveInventory(world);
+            nitroxDebug.SaveBase(world);
         }
 
         private Optional<World> LoadFromFile()
@@ -129,7 +137,8 @@ namespace NitroxServer.Serialization.World
                                           persistedData.PlayerData,
                                           persistedData.WorldData.GameData,
                                           persistedData.WorldData.ParsedBatchCells,
-                                          persistedData.WorldData.EscapePodData,
+                                          //persistedData.WorldData.EscapePodData,
+                                          new EscapePodData(),
                                           config.GameMode);
 
                 return Optional<World>.Of(world);
