@@ -44,7 +44,7 @@ namespace NitroxServer.GameLogic.Players
             set { ModulesItemsById = value; }
         }
 
-        Dictionary<NitroxId, EquippedItemData> serializableModules = new Dicgionary<NitroxId, EquippedItemData>();
+        Dictionary<NitroxId, EquippedItemData> serializableModules = new Dictionary<NitroxId, EquippedItemData>();
 
         [ProtoMember(3)]
         public ushort currentPlayerId = 0;
