@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.DataStructures.Util;
@@ -40,7 +38,7 @@ namespace NitroxModel_Subnautica.DataStructures.GameLogic
 
         }
 
-        public CyclopsModel(NitroxModel.DataStructures.TechType techType, NitroxId id, Vector3 position, Quaternion rotation, Optional<List<InteractiveChildObjectIdentifier>> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours) : base(techType, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours)
+        public CyclopsModel(NitroxModel.DataStructures.TechType techType, NitroxId id, Vector3 position, Quaternion rotation, List<InteractiveChildObjectIdentifier> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours, float health) : base(techType, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours, health)
         {
             FloodLightsOn = true;
             InternalLightsOn = true;

@@ -1,21 +1,20 @@
 ﻿using System;
-using NitroxModel.Logger;
 
 namespace NitroxModel.Packets
 {
     [Serializable]
     public class ServerCommand : Packet
     {
-        public string[] CmdArgs;
-
-        public ServerCommand(string[] args)
-        {
-            CmdArgs = args;
-        }
+        public readonly string Cmd;
 
         public ServerCommand(string cmd)
         {
-            CmdArgs = cmd.Split(' ');
+            Cmd = cmd;
+        }
+
+        public ServerCommand(string[] cmdArgs)
+        {
+            Cmd = string.Join(" ", cmdArgs);
         }
     }
 }

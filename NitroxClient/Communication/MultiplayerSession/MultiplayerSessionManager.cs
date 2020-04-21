@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.Communication.MultiplayerSession.ConnectionState;
+using NitroxClient.Debuggers;
 using NitroxClient.GameLogic;
 using NitroxModel;
-using NitroxModel.Core;
 using NitroxModel.Helper;
 using NitroxModel.Logger;
 using NitroxModel.MultiplayerSession;
@@ -89,15 +89,21 @@ namespace NitroxClient.Communication.MultiplayerSession
 
         public void Disconnect()
         {
-            CurrentState.Disconnect(this);
+            if (CurrentState.CurrentStage != MultiplayerSessionConnectionStage.DISCONNECTED)
+            {
+                CurrentState.Disconnect(this);
+            }
         }
 
-        public void Send(Packet packet)
+        public bool Send(Packet packet)
         {
-            if (!suppressedPacketsTypes.Contains(packet.GetType()))
+            Type packetType = packet.GetType();
+            if (!suppressedPacketsTypes.Contains(packetType))
             {
                 Client.Send(packet);
+                return true;
             }
+            return false;
         }
 
         public PacketSuppressor<T> Suppress<T>()

@@ -1,50 +1,37 @@
-﻿using System.Text.RegularExpressions;
-using NitroxServer.ConsoleCommands.Abstract;
-using NitroxServer.GameLogic.Players;
+﻿using NitroxServer.ConsoleCommands.Abstract;
 using NitroxModel.DataStructures.GameLogic;
-using NitroxServer.GameLogic;
 using NitroxModel.DataStructures.Util;
-using NitroxModel.Logger;
-using NitroxServer.ConfigParser;
+using NitroxModel.Server;
 
 namespace NitroxServer.ConsoleCommands
 {
     internal class LoginCommand : Command
     {
-        private readonly PlayerData playerData;
-        private readonly PlayerManager playerManager;
         private readonly ServerConfig serverConfig;
 
-        public LoginCommand(PlayerData playerData, PlayerManager playerManager, ServerConfig serverConfig) : base("login", Perms.PLAYER, "<password>")
+        public LoginCommand(ServerConfig serverConfig) : base("login", Perms.PLAYER, "{password}", "Log in to server as admin (requires password)")
         {
-            this.playerData = playerData;
-            this.playerManager = playerManager;
             this.serverConfig = serverConfig;
         }
 
-        public override void RunCommand(string[] args, Optional<Player> player)
+        public override void RunCommand(string[] args, Optional<Player> sender)
         {
-            string pass = args[0];
-            string message;
-            string playerName = player.Get().Name;
+            string message = "Can't update permissions";
 
-            if (pass == serverConfig.AdminPassword)
+            if (sender.HasValue)
             {
-                if (playerData.SetPermissions(playerName, Perms.ADMIN))
+                if (args[0] == serverConfig.AdminPassword)
                 {
-                    message = "Updated permissions to admin for " + playerName;
+                    sender.Value.Permissions = Perms.ADMIN;
+                    message = $"Updated permissions to admin for {sender.Value.Name}";
                 }
                 else
                 {
-                    message = "Could not update permissions " + playerName;
+                    message = "Incorrect Password";
                 }
             }
-            else
-            {
-                message = "Incorrect Password";
-            }
-            Log.Info(message);
-            SendServerMessageIfPlayerIsPresent(player, message);
+
+            Notify(sender, message);
         }
 
         public override bool VerifyArgs(string[] args)

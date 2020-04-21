@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using Harmony;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NitroxPatcher.Patches;
 using NitroxPatcher.Patches.Dynamic;
 using NitroxTest.Patcher.Test;
 
@@ -26,10 +24,10 @@ namespace NitroxTest.Patcher.Patches
         [TestMethod]
         public void InjectionSanity()
         {
-            List<CodeInstruction> beforeInstructions = PatchTestHelper.GetInstructionsFromMethod((DynamicMethod)BaseGhost_Finish_Patch.TARGET_METHOD);
+            IEnumerable<CodeInstruction> beforeInstructions = PatchTestHelper.GetInstructionsFromMethod(BaseGhost_Finish_Patch.TARGET_METHOD);
             IEnumerable<CodeInstruction> result = BaseGhost_Finish_Patch.Transpiler(BaseGhost_Finish_Patch.TARGET_METHOD, beforeInstructions);
 
-            Assert.IsTrue(beforeInstructions.Count < result.Count());
+            Assert.IsTrue(beforeInstructions.Count() < result.Count());
         }
     }
 }

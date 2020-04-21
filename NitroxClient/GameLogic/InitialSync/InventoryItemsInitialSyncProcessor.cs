@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Helper;
 using NitroxClient.GameLogic.InitialSync.Base;
-using NitroxClient.GameLogic.Spawning;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.Logger;
 using NitroxModel.Packets;
@@ -30,8 +30,10 @@ namespace NitroxClient.GameLogic.InitialSync
             DependentProcessors.Add(typeof(EquippedItemInitialSyncProcessor)); // Vehicles can have equipped items that spawns container
         }
 
-        public override void Process(InitialPlayerSync packet)
+        public override IEnumerator Process(InitialPlayerSync packet, WaitScreen.ManualWaitItem waitScreenItem)
         {
+            int totalItemDataSynced = 0;
+
             using (packetSender.Suppress<ItemContainerAdd>())
             {
                 ItemGoalTracker itemGoalTracker = (ItemGoalTracker)typeof(ItemGoalTracker).GetField("main", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
@@ -39,6 +41,8 @@ namespace NitroxClient.GameLogic.InitialSync
 
                 foreach (ItemData itemdata in packet.InventoryItems)
                 {
+                    waitScreenItem.SetProgress(totalItemDataSynced, packet.InventoryItems.Count);
+
                     GameObject item;
 
                     try
@@ -50,6 +54,8 @@ namespace NitroxClient.GameLogic.InitialSync
                         Log.Error("Error deserializing item data " + itemdata.ItemId + " " + ex.Message);
                         continue;
                     }
+
+                    Log.Info("Initial item data for " + item.name + " giving to container " + itemdata.ContainerId);
                     
                     Pickupable pickupable = item.GetComponent<Pickupable>();
 
@@ -68,8 +74,13 @@ namespace NitroxClient.GameLogic.InitialSync
                     {
                         itemContainers.AddItem(item, itemdata.ContainerId);
                     }
+
+                    totalItemDataSynced++;
+                    yield return null;
                 }
             }
+            
+            Log.Info("Recieved initial sync with " + totalItemDataSynced + " inventory items");
         }
     }
 }

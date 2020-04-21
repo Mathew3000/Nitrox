@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxServer.GameLogic.Entities.Spawning;
@@ -11,11 +10,10 @@ namespace NitroxServer_Subnautica.GameLogic.Entities.Spawning
     {
         private readonly Dictionary<string, EntitySpawnPoint> spawnPointsByUid = new Dictionary<string, EntitySpawnPoint>();
 
-        public override List<EntitySpawnPoint> From(AbsoluteEntityCell absoluteEntityCell, Transform transform, GameObject gameObject)
+        public override List<EntitySpawnPoint> From(AbsoluteEntityCell absoluteEntityCell, NitroxTransform transform, GameObject gameObject)
         {
             List<EntitySpawnPoint> spawnPoints = new List<EntitySpawnPoint>();
             EntitySlotsPlaceholder entitySlotsPlaceholder = gameObject.GetComponent<EntitySlotsPlaceholder>();
-            
 
             if (!ReferenceEquals(entitySlotsPlaceholder, null))
             {
@@ -36,7 +34,7 @@ namespace NitroxServer_Subnautica.GameLogic.Entities.Spawning
             }
             else
             {
-                EntitySpawnPoint entitySpawnPoint = new EntitySpawnPoint(absoluteEntityCell, transform.Position, transform.Rotation, transform.Scale, gameObject.ClassId);
+                EntitySpawnPoint entitySpawnPoint = new EntitySpawnPoint(absoluteEntityCell, transform.LocalPosition, transform.LocalRotation, transform.LocalScale, gameObject.ClassId);
 
                 HandleParenting(spawnPoints, entitySpawnPoint, gameObject);
             }

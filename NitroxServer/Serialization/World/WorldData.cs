@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using NitroxModel.DataStructures;
 using NitroxServer.GameLogic;
 using NitroxServer.GameLogic.Bases;
@@ -38,6 +36,9 @@ namespace NitroxServer.Serialization.World
         [ProtoMember(7)]
         public EscapePodData EscapePodData { get; set; }
 
+        [ProtoMember(8)]
+        public StoryTimingData StoryTimingData { get; set; }
+
         public bool IsValid()
         {
             return (ParsedBatchCells != null) && // Always returns false on empty saves
@@ -46,8 +47,9 @@ namespace NitroxServer.Serialization.World
                    (InventoryData != null) &&
                    (GameData != null) &&
                    (EntityData != null) &&
-                   (EntityData.SerializableEntities.Count > 0) &&
-                   (EscapePodData != null);
+                   (EntityData.Entities.Count > 0) &&
+                   (EscapePodData != null) &&
+                   (StoryTimingData != null);
         }
     }
 }

@@ -21,29 +21,33 @@ namespace NitroxClient.MonoBehaviours
         {
         }
 
+        public static IEnumerable<KeyValuePair<NitroxId, GameObject>> GetGameObjects()
+        {
+            return gameObjectsById;
+        }
+
         public static GameObject RequireObjectFrom(NitroxId id)
         {
             Optional<GameObject> gameObject = GetObjectFrom(id);
             Validate.IsPresent(gameObject, "Game object required from id: " + id);
-            return gameObject.Get();
+            return gameObject.Value;
         }
 
         public static Optional<GameObject> GetObjectFrom(NitroxId id)
         {
             if (id == null)
             {
-                return Optional<GameObject>.Empty();
+                return Optional.Empty;
             }
 
             GameObject gameObject;
-
             if (!gameObjectsById.TryGetValue(id, out gameObject))
             {
-                return Optional<GameObject>.Empty();
+                return Optional.Empty;
             }
 
             // Nullable incase game object is marked as destroyed
-            return Optional<GameObject>.OfNullable(gameObject);
+            return Optional.OfNullable(gameObject);
         }
 
         public static void SetNewId(GameObject gameObject, NitroxId id)
@@ -68,7 +72,7 @@ namespace NitroxClient.MonoBehaviours
         public static NitroxId GetId(GameObject gameObject)
         {
             NitroxEntity entity = gameObject.GetComponent<NitroxEntity>();
-            if (entity != null)
+            if (entity)
             {
                 return entity.Id;
             }

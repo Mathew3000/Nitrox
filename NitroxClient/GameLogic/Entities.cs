@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Spawning;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.DataStructures.Util;
+using NitroxModel.Helper;
 using NitroxModel.Logger;
 using NitroxModel.Packets;
 using NitroxModel_Subnautica.Helper;
@@ -21,7 +22,8 @@ namespace NitroxClient.GameLogic
         private readonly DefaultEntitySpawner defaultEntitySpawner = new DefaultEntitySpawner();
         private readonly SerializedEntitySpawner serializedEntitySpawner = new SerializedEntitySpawner();
         private readonly Dictionary<TechType, IEntitySpawner> customSpawnersByTechType = new Dictionary<TechType, IEntitySpawner>();
-        private readonly Dictionary<AbsoluteEntityCell, EntityCell> entityCells = new Dictionary<AbsoluteEntityCell, EntityCell>();
+        private readonly Dictionary<Int3, BatchCells> batchCellsById = new Dictionary<Int3, BatchCells>();
+        private readonly CellRootSpawner cellRootSpawner = new CellRootSpawner();
 
         public Entities(IPacketSender packetSender)
         {
@@ -53,11 +55,10 @@ namespace NitroxClient.GameLogic
             foreach (Entity entity in entities)
             {
                 LargeWorldStreamer.main.cellManager.UnloadBatchCells(ToInt3(entity.AbsoluteEntityCell.CellId)); // Just in case
-                
-                
+
                 if (!alreadySpawnedIds.Contains(entity.Id))
                 {
-                    Spawn(entity, Optional<GameObject>.Empty());
+                    Spawn(entity, Optional.Empty);
                 }
                 else
                 {
@@ -66,20 +67,31 @@ namespace NitroxClient.GameLogic
             }
         }
 
-        private EntityCell EnsureCell(Entity entity, Optional<GameObject> liveRoot)
+        private EntityCell EnsureCell(Entity entity)
         {
             EntityCell entityCell;
+            BatchCells batchCells;
 
-            if (!entityCells.TryGetValue(entity.AbsoluteEntityCell, out entityCell) && liveRoot.IsPresent() && liveRoot.Get().GetComponent<LargeWorldEntityCell>())
+            Int3 batchId = ToInt3(entity.AbsoluteEntityCell.BatchId);
+            Int3 cellId = ToInt3(entity.AbsoluteEntityCell.CellId);
+
+            if (!batchCellsById.TryGetValue(batchId, out batchCells))
             {
-                Int3 batchId = ToInt3(entity.AbsoluteEntityCell.BatchId);
-                Int3 cellId = ToInt3(entity.AbsoluteEntityCell.CellId);
-                entityCell = new EntityCell(LargeWorldStreamer.main.cellManager, LargeWorldStreamer.main, batchId, cellId, entity.Level);
-                entityCells.Add(entity.AbsoluteEntityCell, entityCell);
-                entityCell.liveRoot = liveRoot.Get();
-                entityCell.liveRoot.name = string.Format("CellRoot {0}, {1}, {2}; Batch {3}, {4}, {5}", cellId.x, cellId.y, cellId.z, batchId.x, batchId.y, batchId.z);
+                LargeWorldStreamer.main.cellManager.UnloadBatchCells(batchId); // Just in case
+                batchCells = LargeWorldStreamer.main.cellManager.InitializeBatchCells(batchId);
+                batchCellsById.Add(batchId, batchCells);
+            }
+
+            entityCell = batchCells.Get(cellId, entity.AbsoluteEntityCell.Level);
+
+            if (entityCell == null)
+            {
+                entityCell = batchCells.Add(cellId, entity.AbsoluteEntityCell.Level);
                 entityCell.Initialize();
             }
+
+            entityCell.EnsureRoot();
+            
             return entityCell;
         }
 
@@ -92,15 +104,10 @@ namespace NitroxClient.GameLogic
         {
             alreadySpawnedIds.Add(entity.Id);
 
+            EntityCell cellRoot = EnsureCell(entity);
+
             IEntitySpawner entitySpawner = ResolveEntitySpawner(entity);
-            Optional<GameObject> gameObject = entitySpawner.Spawn(entity, parent);
-
-            EntityCell cellRoot = EnsureCell(entity, gameObject);
-
-            if (cellRoot != null && gameObject.Get().GetComponent<LargeWorldEntityCell>() != null)
-            {
-                LargeWorldStreamer.main.cellManager.QueueForAwake(cellRoot);
-            }
+            Optional<GameObject> gameObject = entitySpawner.Spawn(entity, parent, cellRoot);
 
             foreach (Entity childEntity in entity.ChildEntities)
             {
@@ -119,9 +126,11 @@ namespace NitroxClient.GameLogic
             {
                 return serializedEntitySpawner;
             }
-
+            if (entity.ClassId == "55d7ab35-de97-4d95-af6c-ac8d03bb54ca")
+            {
+                return cellRootSpawner;
+            }
             TechType techType = entity.TechType.Enum();
-
             if (customSpawnersByTechType.ContainsKey(techType))
             {
                 return customSpawnersByTechType[techType];
@@ -133,19 +142,17 @@ namespace NitroxClient.GameLogic
         private void UpdatePosition(Entity entity)
         {
             Optional<GameObject> opGameObject = NitroxEntity.GetObjectFrom(entity.Id);
-
-            if (opGameObject.IsPresent())
+            if (!opGameObject.HasValue)
             {
-                opGameObject.Get().transform.position = entity.Position;
-                opGameObject.Get().transform.rotation = entity.Rotation;
-                opGameObject.Get().transform.localScale = entity.Scale;
+                Log.Error("Entity was already spawned but not found(is it in another chunk?) NitroxId: " + entity.Id + " TechType: " + entity.TechType + " ClassId: " + entity.ClassId + " Transform: " + entity.Transform);
+                return;
             }
-            else
-            {
-                Log.Error("Entity was already spawned but not found(is it in another chunk?) NitroxId: " + entity.Id + " TechType: " + entity.TechType + " ClassId: " + entity.ClassId + " Position: " + entity.Position);
-            }
+            
+            opGameObject.Value.transform.position = entity.Transform.Position;
+            opGameObject.Value.transform.rotation = entity.Transform.Rotation;
+            opGameObject.Value.transform.localScale = entity.Transform.LocalScale;
         }
-
+        
         public bool WasSpawnedByServer(NitroxId id)
         {
             return alreadySpawnedIds.Contains(id);

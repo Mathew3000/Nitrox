@@ -1,7 +1,7 @@
-﻿using NitroxModel.DataStructures.Util;
-using ProtoBufNet;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using NitroxModel.DataStructures.Util;
+using ProtoBufNet;
 using UnityEngine;
 
 namespace NitroxModel.DataStructures.GameLogic
@@ -23,18 +23,10 @@ namespace NitroxModel.DataStructures.GameLogic
         public Quaternion Rotation { get; set; }
 
         [ProtoMember(5)]
-        public List<InteractiveChildObjectIdentifier> SerializableInteractiveChildIdentifiers
-        {
-            get { return (InteractiveChildIdentifiers.IsPresent()) ? InteractiveChildIdentifiers.Get() : null; }
-            set { InteractiveChildIdentifiers = Optional<List<InteractiveChildObjectIdentifier>>.OfNullable(value); }
-        }
+        public ThreadSafeCollection<InteractiveChildObjectIdentifier> InteractiveChildIdentifiers { get; }
 
         [ProtoMember(6)]
-        public NitroxId SerializableDockingBayId
-        {
-            get { return (DockingBayId.IsPresent()) ? DockingBayId.Get() : null; }
-            set { DockingBayId = Optional<NitroxId>.OfNullable(value); }
-        }
+        public Optional<NitroxId> DockingBayId { get; set; }
 
         [ProtoMember(7)]
         public string Name { get; set; }
@@ -45,29 +37,29 @@ namespace NitroxModel.DataStructures.GameLogic
         [ProtoMember(9)]
         public Vector3[] Colours { get; set; }
 
-        [ProtoIgnore]
-        public Optional<List<InteractiveChildObjectIdentifier>> InteractiveChildIdentifiers { get; set; }
-
-        [ProtoIgnore]
-        public Optional<NitroxId> DockingBayId { get; set; }
+        [ProtoMember(10)]
+        public float Health { get; set; } = 1;
 
         public VehicleModel()
         {
-            InteractiveChildIdentifiers = Optional<List<InteractiveChildObjectIdentifier>>.Empty();
-            DockingBayId = Optional<NitroxId>.Empty();
+            InteractiveChildIdentifiers = new ThreadSafeCollection<InteractiveChildObjectIdentifier>();
+            DockingBayId = Optional.Empty;
         }
 
-        public VehicleModel(TechType techType, NitroxId id, Vector3 position, Quaternion rotation, Optional<List<InteractiveChildObjectIdentifier>> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours)
+        public VehicleModel(TechType techType, NitroxId id, Vector3 position, Quaternion rotation, IEnumerable<InteractiveChildObjectIdentifier> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb,
+            Vector3[] colours,
+            float health)
         {
             TechType = techType;
             Id = id;
             Position = position;
             Rotation = rotation;
-            InteractiveChildIdentifiers = interactiveChildIdentifiers;
+            InteractiveChildIdentifiers = new ThreadSafeCollection<InteractiveChildObjectIdentifier>(interactiveChildIdentifiers);
             DockingBayId = dockingBayId;
             Name = name;
             HSB = hsb;
             Colours = colours;
+            Health = health;
         }
     }
 }

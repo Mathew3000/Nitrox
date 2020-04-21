@@ -45,7 +45,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>RELEASE,TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -72,9 +72,6 @@
     </Reference>
     <Reference Include="LitJson">
       <HintPath>$(SubnauticaManaged)\LitJson.dll</HintPath>
-    </Reference>
-    <Reference Include="AssetsTools.NET">
-      <HintPath>..\lib\AssetsTools.NET.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="protobuf-net">
@@ -268,6 +265,7 @@
     <Compile Include="Communication\Packets\Processors\FireDousedProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\EscapePodRadioRepairProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\EscapePodRepairProcessor.cs" />
+    <Compile Include="Communication\Packets\Processors\PingRenamedPacketProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\PlayerEquipmentAddedProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\PlayerEquipmentRemovedProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\RadioPlayPendingMessageProcessor.cs" />
@@ -312,29 +310,33 @@
     <Compile Include="Communication\Packets\Processors\VehicleUndockingProcessor.cs" />
     <Compile Include="ConsoleCommands\Abstract\Command.cs" />
     <Compile Include="ConsoleCommands\ChangeServerPasswordCommand.cs" />
-    <Compile Include="ConsoleCommands\DayCommand.cs" />
     <Compile Include="ConsoleCommands\DeopCommand.cs" />
     <Compile Include="ConsoleCommands\ChangeAdminPasswordCommand.cs" />
     <Compile Include="ConsoleCommands\HelpCommand.cs" />
     <Compile Include="ConsoleCommands\KickCommand.cs" />
     <Compile Include="ConsoleCommands\ListCommand.cs" />
     <Compile Include="ConsoleCommands\LoadBatchCommand.cs" />
-    <Compile Include="ConsoleCommands\NightCommand.cs" />
     <Compile Include="ConsoleCommands\LoginCommand.cs" />
     <Compile Include="ConsoleCommands\OpCommand.cs" />
-    <Compile Include="ConsoleCommands\SayCommand.cs" />
+    <Compile Include="ConsoleCommands\BroadcastCommand.cs" />
+    <Compile Include="ConsoleCommands\SummaryCommand.cs" />
+    <Compile Include="ConsoleCommands\TimeCommand.cs" />
     <Compile Include="ConsoleCommands\WhisperCommand.cs" />
     <Compile Include="Exceptions\DuplicateRegistrationException.cs" />
+    <Compile Include="GameLogic\Bases\BaseManager.cs" />
+    <Compile Include="GameLogic\Entities\NitroxEntitySlot.cs" />
     <Compile Include="GameLogic\Entities\Spawning\EntitySpawnPointFactory.cs" />
     <Compile Include="GameLogic\EscapePodData.cs" />
+    <Compile Include="GameLogic\Items\InventoryManager.cs" />
+    <Compile Include="GameLogic\StoryTimingData.cs" />
     <Compile Include="GameLogic\Unlockables\StoryGoalData.cs" />
+    <Compile Include="GameLogic\Vehicles\VehicleManager.cs" />
     <Compile Include="Serialization\Resources\Datastructures\AssetIdentifier.cs" />
     <Compile Include="Serialization\Resources\Datastructures\GameObjectAsset.cs" />
     <Compile Include="Serialization\Resources\Datastructures\MonobehaviourAsset.cs" />
     <Compile Include="Serialization\Resources\Datastructures\PrefabAsset.cs" />
     <Compile Include="Serialization\Resources\Datastructures\PrefabPlaceholderAsset.cs" />
     <Compile Include="Serialization\Resources\Datastructures\TransformAsset.cs" />
-    <Compile Include="Serialization\ServerConfig.cs" />
     <Compile Include="ConsoleCommands\ExitCommand.cs" />
     <Compile Include="ConsoleCommands\Processor\ConsoleCommandProcessor.cs" />
     <Compile Include="ConsoleCommands\SaveCommand.cs" />
@@ -362,7 +364,6 @@
     <Compile Include="Player.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\BatchCellsParser.cs" />
-    <Compile Include="Serialization\GenericNode.cs" />
     <Compile Include="Serialization\ServerProtobufSerializer.cs" />
     <Compile Include="Serialization\World\PersistedWorldData.cs" />
     <Compile Include="Serialization\World\World.cs" />
@@ -373,9 +374,6 @@
     <Compile Include="Server.cs" />
     <Compile Include="ServerAutoFacRegistrar.cs" />
     <Compile Include="UnityStubs\GameObject.cs" />
-    <Compile Include="UnityStubs\Quaternion.cs" />
-    <Compile Include="UnityStubs\Transform.cs" />
-    <Compile Include="UnityStubs\Vector3.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

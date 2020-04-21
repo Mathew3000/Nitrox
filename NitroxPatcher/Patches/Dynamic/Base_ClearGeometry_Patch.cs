@@ -5,6 +5,7 @@ using Harmony;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures;
 using NitroxModel.Helper;
+using NitroxModel.Logger;
 using UnityEngine;
 
 namespace NitroxPatcher.Patches.Dynamic
@@ -44,21 +45,25 @@ namespace NitroxPatcher.Patches.Dynamic
                     for(int i = 0; i < cellObject.childCount; i++)
                     {
                         Transform child = cellObject.GetChild(i);
-
+                        
                         if (child != null && child.gameObject != null)
                         {
-                            if(child.gameObject.GetComponent<UniqueIdentifier>() != null)
+                            // Ensure there is already a nitrox id, we don't want to go creating one
+                            // which happens if you call GetId directly and it is missing.
+                            if(child.gameObject.GetComponent<NitroxEntity>() != null)
                             {
                                 NitroxId id = NitroxEntity.GetId(child.gameObject);
                                 string key = getObjectKey(child.gameObject.name, child.position);
                                 NitroxIdByObjectKey[key] = id;
+
+                                Log.Debug("Clearing Base Geometry, storing id for later lookup: " + key + " " + id);
                             }
                         }
                     }
                 }
             }
         }
-
+        
         public static string getObjectKey(string name, Vector3 postion)
         {
             return name + postion.ToString();

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using NitroxModel.DataStructures.Util;
 using NitroxModel.Discovery.InstallationFinders;
-using NitroxModel.Helper;
 
 namespace NitroxModel.Discovery
 {
@@ -12,10 +11,14 @@ namespace NitroxModel.Discovery
     /// </summary>
     public class GameInstallationFinder : IFindGameInstallation
     {
+        /// <summary>
+        ///     The order of these finders is VERY important. Only change if you know what you're doing.
+        /// </summary>
         private readonly IFindGameInstallation[] finders = {
+            new GameInCurrentDirectoryFinder(),
             new ConfigFileGameFinder(),
+            new EpicGamesInstallationFinder(),
             new SteamGameRegistryFinder(),
-            new EpicGamesInstallationFinder()
         };
         
         /// <summary>
@@ -33,7 +36,7 @@ namespace NitroxModel.Discovery
             foreach (IFindGameInstallation finder in finders)
             {
                 Optional<string> path = finder.FindGame(errors);
-                if (!path.IsPresent())
+                if (!path.HasValue)
                 {
                     continue;
                 }
@@ -42,7 +45,7 @@ namespace NitroxModel.Discovery
                 return path;
             }
 
-            return Optional<string>.Empty();
+            return Optional.Empty;
         }
     }
 }

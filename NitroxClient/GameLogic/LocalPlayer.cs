@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.PlayerModel.Abstract;
 using NitroxClient.MonoBehaviours;
@@ -11,6 +10,7 @@ using NitroxModel.MultiplayerSession;
 using NitroxModel.Packets;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 
 namespace NitroxClient.GameLogic
 {
@@ -18,10 +18,16 @@ namespace NitroxClient.GameLogic
     {
         private readonly IMultiplayerSession multiplayerSession;
         private readonly IPacketSender packetSender;
+        private readonly Lazy<GameObject> body;
+        private readonly Lazy<GameObject> playerModel;
+        private readonly Lazy<GameObject> bodyPrototype;
 
-        public GameObject Body { get; }
-        public GameObject PlayerModel { get; }
-        public GameObject BodyPrototype { get; }
+        public GameObject Body => body.Value;
+
+        public GameObject PlayerModel => playerModel.Value;
+
+        public GameObject BodyPrototype => bodyPrototype.Value;
+
         public string PlayerName => multiplayerSession.AuthenticationContext.Username;
         public PlayerSettings PlayerSettings => multiplayerSession.PlayerSettings;
 
@@ -29,26 +35,23 @@ namespace NitroxClient.GameLogic
         {
             this.multiplayerSession = multiplayerSession;
             this.packetSender = packetSender;
-
-            Body = Player.main.RequireGameObject("body");
-            PlayerModel = Body.RequireGameObject("player_view");
-
-            BodyPrototype = CreateBodyPrototype();
+            body = new Lazy<GameObject>(() => Player.main.RequireGameObject("body"));
+            playerModel = new Lazy<GameObject>(() => Body.RequireGameObject("player_view"));
+            bodyPrototype = new Lazy<GameObject>(CreateBodyPrototype);
         }
 
-        public void BroadcastStats(float oxygen, float maxOxygen, float health, float food, float water)
+        public void BroadcastStats(float oxygen, float maxOxygen, float health, float food, float water, float infectionAmount)
         {
-            PlayerStats playerStats = new PlayerStats(multiplayerSession.Reservation.PlayerId, oxygen, maxOxygen, health, food, water);
+            PlayerStats playerStats = new PlayerStats(multiplayerSession.Reservation.PlayerId, oxygen, maxOxygen, health, food, water, infectionAmount);
             packetSender.Send(playerStats);
         }
 
         public void UpdateLocation(Vector3 location, Vector3 velocity, Quaternion bodyRotation, Quaternion aimingRotation, Optional<VehicleMovementData> vehicle)
         {
             Movement movement;
-
-            if (vehicle.IsPresent())
+            if (vehicle.HasValue)
             {
-                movement = new VehicleMovement(multiplayerSession.Reservation.PlayerId, vehicle.Get());
+                movement = new VehicleMovement(multiplayerSession.Reservation.PlayerId, vehicle.Value);
             }
             else
             {
@@ -85,7 +88,7 @@ namespace NitroxClient.GameLogic
             GameObject clone = Object.Instantiate(prototype);
             prototype.GetComponentInParent<Player>().head.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
             clone.SetActive(false);
-            
+
             return clone;
         }
     }

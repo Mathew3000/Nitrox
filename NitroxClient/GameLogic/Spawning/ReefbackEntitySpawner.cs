@@ -14,28 +14,31 @@ namespace NitroxClient.GameLogic.Spawning
             this.defaultSpawner = defaultSpawner;
         }
 
-        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent)
+        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent, EntityCell cellRoot)
         {
-            Optional<GameObject> reefback = defaultSpawner.Spawn(entity, parent);
-
-            if(reefback.IsPresent())
+            Optional<GameObject> reefback = defaultSpawner.Spawn(entity, parent, cellRoot);
+            if (!reefback.HasValue)
             {
-                ReefbackLife life = reefback.Get().GetComponent<ReefbackLife>();
-                life.initialized = true;
-                life.ReflectionCall("SpawnPlants");
-
-                foreach (Entity childEntity in entity.ChildEntities)
-                {
-                    Optional<GameObject> child = defaultSpawner.Spawn(childEntity, reefback);
-
-                    if (child.IsPresent())
-                    {
-                        child.Get().AddComponent<ReefbackCreature>();
-                    }
-                }
+                return Optional.Empty;
+            }
+            ReefbackLife life = reefback.Value.GetComponent<ReefbackLife>();
+            if (life == null)
+            {
+                return Optional.Empty;
             }
             
-            return Optional<GameObject>.Empty();
+            life.initialized = true;
+            life.ReflectionCall("SpawnPlants");
+            foreach (Entity childEntity in entity.ChildEntities)
+            {
+                Optional<GameObject> child = defaultSpawner.Spawn(childEntity, reefback, cellRoot);
+                if (child.HasValue)
+                {
+                    child.Value.AddComponent<ReefbackCreature>();
+                }
+            }
+
+            return Optional.Empty;
         }
 
         public bool SpawnsOwnChildren()

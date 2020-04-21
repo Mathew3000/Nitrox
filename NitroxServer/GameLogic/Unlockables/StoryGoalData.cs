@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.GameLogic;
-using NitroxModel.Logger;
 using ProtoBufNet;
 
 namespace NitroxServer.GameLogic.Unlockables
@@ -9,70 +9,22 @@ namespace NitroxServer.GameLogic.Unlockables
     public class StoryGoalData
     {
         [ProtoMember(1)]
-        public List<string> SerializeCompletedGoals
-        {
-            get
-            {
-                lock (completedGoals)
-                {
-                    return completedGoals;
-                }
-            }
-            set { completedGoals = value; }
-        }
-
-        [ProtoMember(2)]
-        public List<string> SerializeRadioQueue
-        {
-            get
-            {
-                lock (radioQueue)
-                {
-                    return radioQueue;
-                }
-            }
-            set { radioQueue = value; }
-        }
-
-        [ProtoIgnore]
-        private List<string> completedGoals = new List<string>();
+        public ThreadSafeCollection<string> CompletedGoals { get; } = new ThreadSafeCollection<string>();
         
-        [ProtoIgnore]
-        private List<string> radioQueue = new List<string>();
-
-        public void AddStoryGoal(string entry)
-        {
-            lock (completedGoals)
-            {
-                completedGoals.Add(entry);
-            }
-        }
-
-        public void AddRadioMessage(string entry)
-        {
-            lock (radioQueue)
-            {
-                radioQueue.Add(entry);
-            }
-        }
+        [ProtoMember(2)]
+        public ThreadSafeCollection<string> RadioQueue { get; } = new ThreadSafeCollection<string>();
+        
+        [ProtoMember(3)]
+        public ThreadSafeCollection<string> GoalUnlocks { get; } = new ThreadSafeCollection<string>();
 
         public void RemovedLatestRadioMessage()
         {
-            lock (radioQueue)
-            {
-                radioQueue.RemoveAt(0);
-            }
+            RadioQueue.RemoveAt(0);
         }
 
         public InitialStoryGoalData GetInitialStoryGoalData()
         {
-            lock (completedGoals)
-            {
-                lock (radioQueue)
-                {
-                    return new InitialStoryGoalData(new List<string>(completedGoals), new List<string>(radioQueue));
-                }
-            }
+            return new InitialStoryGoalData(new List<string>(CompletedGoals), new List<string>(RadioQueue), new List<string>(GoalUnlocks));
         }
     }
 }

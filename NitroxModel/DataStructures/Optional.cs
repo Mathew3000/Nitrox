@@ -1,106 +1,138 @@
 ﻿using System;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+using ProtoBufNet;
 
 namespace NitroxModel.DataStructures.Util
 {
+    /// <summary>
+    ///     Used to give context on whether the wrapped value is nullable and to improve error logging.
+    /// </summary>
+    /// <remarks>
+    ///     Used some hacks to circumvent C#' lack of reverse type inference (usually need to specify the type when returning a
+    ///     value using a generic method).
+    ///     Code from https://tyrrrz.me/blog/return-type-inference
+    /// </remarks>
+    /// <typeparam name="T"></typeparam>
     [Serializable]
-    public class HasValueOptional<T> : Optional<T>
+    [ProtoContract]
+    public struct Optional<T> : ISerializable
     {
-        private readonly T value;
+        [ProtoMember(1)]
+        public T Value { get; private set; }
 
-        public HasValueOptional(T value)
+        private bool hasValue;
+        
+        [ProtoMember(2)]
+        public bool HasValue
         {
-            this.value = value;
+            get
+            {
+                if (ReferenceEquals(Value, null))
+                {
+                    return false;
+                }
+
+                // Check to satisfy unity objects.  Sometimes they are internally destroyed but are not considered null.
+                // For the purpose of optional, we consider a dead object to be the same as null.
+                return Value.ToString() != "null";
+            }
+            set
+            {
+                hasValue = value;
+            }
         }
 
-        public override T Get()
+        private Optional(T value)
         {
-            return value;
+            Value = value;
+            hasValue = true;
         }
 
-        public override bool IsPresent()
+        public T OrElse(T elseValue)
         {
-            return true;
+            return HasValue ? Value : elseValue;
         }
 
-        public override bool IsEmpty()
+        internal static Optional<T> Of(T value)
         {
-            return false;
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value), $"Tried to set null on {typeof(Optional<T>)}");
+            }
+
+            return new Optional<T>(value);
         }
 
-        public override T OrElse(T elseValue)
+        internal static Optional<T> OfNullable(T value)
         {
-            return value;
+            return Equals(default(T), value) ? Optional.Empty : new Optional<T>(value);
         }
 
         public override string ToString()
         {
-            return $"Optional[{Get()}]";
-        }
-    }
-
-    [Serializable]
-    public class NoValueOptional<T> : Optional<T>
-    {
-        public override T Get()
-        {
-            throw new InvalidOperationException("Optional did not have a value");
+            string str = Value != null ? Value.ToString() : "Nothing";
+            return $"Optional Contains: {str}";
         }
 
-        public override bool IsPresent()
+        private Optional(SerializationInfo info, StreamingContext context)
         {
-            return false;
+            Value = (T)info.GetValue("value", typeof(T));
+            hasValue = info.GetBoolean("hasValue");
         }
 
-        public override bool IsEmpty()
+        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            return true;
+            info.AddValue("value", Value);
+            info.AddValue("hasValue", HasValue);
         }
 
-        public override T OrElse(T elseValue)
-        {
-            return elseValue;
-        }
+        public static implicit operator Optional<T>(OptionalEmpty none) => new Optional<T>();
 
-        public override string ToString()
+        public static implicit operator Optional<T>?(T obj)
         {
-            return $"Optional<{typeof(T)}>.Empty()";
-        }
-    }
-
-    [Serializable]
-    public abstract class Optional<T>
-    {
-        public static Optional<T> Empty()
-        {
-            return new NoValueOptional<T>();
-        }
-
-        public static Optional<T> Of(T value)
-        {
-            if (value == null || value.Equals(default(T)))
+            if (obj == null)
             {
-                throw new ArgumentNullException(nameof(value), "Value cannot be null");
+                return null;
             }
-
-            return new HasValueOptional<T>(value);
+            return new Optional<T>(obj);
         }
 
-        public static Optional<T> OfNullable(T value)
+        public static implicit operator Optional<T>(T obj)
         {
-            if (value == null || value.Equals(default(T)))
-            {
-                return new NoValueOptional<T>();
-            }
-
-            return new HasValueOptional<T>(value);
+            return Optional.Of(obj);
         }
 
-        public abstract T Get();
-        public abstract bool IsPresent();
-        public abstract bool IsEmpty();
-        public abstract T OrElse(T elseValue);
+        public static explicit operator T(Optional<T> value)
+        {
+            return value.Value;
+        }
     }
-    
+
+    public struct OptionalEmpty
+    {
+    }
+
+    public static class Optional
+    {
+        public static OptionalEmpty Empty { get; } = new OptionalEmpty();
+
+        public static Optional<T> Of<T>(T value) => Optional<T>.Of(value);
+        public static Optional<T> OfNullable<T>(T value) => Optional<T>.OfNullable(value);
+    }
+
+    public sealed class OptionalNullException<T> : Exception
+    {
+        public OptionalNullException() : base($"Optional <{nameof(T)}> is null!")
+        {
+        }
+
+        public OptionalNullException(string message) : base($"Optional <{nameof(T)}> is null:\n\t{message}")
+        {
+        }
+    }
+
     [Serializable]
     public sealed class OptionalEmptyException<T> : Exception
     {

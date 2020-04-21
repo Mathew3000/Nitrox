@@ -1,4 +1,5 @@
-﻿using NitroxClient.GameLogic.InitialSync.Base;
+﻿using System.Collections;
+using NitroxClient.GameLogic.InitialSync.Base;
 using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures;
 using NitroxModel.DataStructures.Util;
@@ -18,43 +19,45 @@ namespace NitroxClient.GameLogic.InitialSync
             DependentProcessors.Add(typeof(VehicleInitialSyncProcessor)); // Players can be spawned in vehicles
         }
 
-        public override void Process(InitialPlayerSync packet)
+        public override IEnumerator Process(InitialPlayerSync packet, WaitScreen.ManualWaitItem waitScreenItem)
         {
             Vector3 position = packet.PlayerSpawnData;
-            Optional<NitroxId> subRootId = packet.PlayerSubRootId;
-
             if (position.x == 0 && position.y == 0 && position.z == 0)
             {
                 position = Player.mainObject.transform.position;
             }
             Player.main.SetPosition(position);
-
-            if (subRootId.IsPresent())
+            
+            // Player position is relative to a subroot if in a subroot
+            Optional<NitroxId> subRootId = packet.PlayerSubRootId;
+            if (!subRootId.HasValue)
             {
-                Optional<GameObject> sub = NitroxEntity.GetObjectFrom(subRootId.Get());
-
-                if (sub.IsPresent())
-                {
-                    SubRoot root = sub.Get().GetComponent<SubRoot>();
-                    // Player position is relative to a subroot if in a subroot
-                    if (root != null && !root.isBase)
-                    {                        
-                        Player.main.SetCurrentSub(root);
-                        Quaternion vehicleAngle = root.transform.rotation;
-                        position = vehicleAngle * position;
-                        position = position + root.transform.position;
-                        Player.main.SetPosition(position);
-                    }
-                    else
-                    {
-                        Log.Error("Could not find subroot for player for subroot with id: " + subRootId.Get());
-                    }
-                }
-                else
-                {
-                    Log.Error("Could not spawn player into subroot with id: " + subRootId.Get());
-                }
+                yield break;
             }
+            Optional<GameObject> sub = NitroxEntity.GetObjectFrom(subRootId.Value);
+            if (!sub.HasValue)
+            {
+                Log.Error("Could not spawn player into subroot with id: " + subRootId.Value);
+                yield break;
+            }
+            SubRoot root = sub.Value.GetComponent<SubRoot>();
+            if (root == null)
+            {
+                Log.Error("Could not find subroot for player for subroot with id: " + subRootId.Value);
+                yield break;
+            }
+            
+            // If player is not swimming
+            Player.main.SetCurrentSub(root);
+            if (root.isBase)
+            {
+                yield break;
+            }
+            Transform rootTransform = root.transform;
+            Quaternion vehicleAngle = rootTransform.rotation;
+            position = vehicleAngle * position;
+            position = position + rootTransform.position;
+            Player.main.SetPosition(position);
         }
     }
 }

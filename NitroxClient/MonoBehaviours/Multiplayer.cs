@@ -7,10 +7,12 @@ using NitroxClient.Communication.Abstract;
 using NitroxClient.Communication.MultiplayerSession;
 using NitroxClient.Communication.Packets.Processors.Abstract;
 using NitroxClient.GameLogic;
+using NitroxClient.GameLogic.ChatUI;
 using NitroxClient.GameLogic.PlayerModel.Abstract;
 using NitroxClient.GameLogic.PlayerModel.ColorSwap;
 using NitroxClient.MonoBehaviours.DiscordRP;
 using NitroxClient.MonoBehaviours.Gui.InGame;
+using NitroxClient.MonoBehaviours.Gui.MainMenu;
 using NitroxModel.Core;
 using NitroxModel.Helper;
 using NitroxModel.Logger;
@@ -54,11 +56,22 @@ namespace NitroxClient.MonoBehaviours
 
         public static IEnumerator LoadAsync()
         {
-            WaitScreen.ManualWaitItem item = WaitScreen.Add("Loading Multiplayer");
+            WaitScreen.ManualWaitItem worldSettleItem = WaitScreen.Add("Awaiting World Settling");
             WaitScreen.ShowImmediately();
+
+            yield return new WaitUntil(() => LargeWorldStreamer.main != null &&
+                                             LargeWorldStreamer.main.land != null &&
+                                             LargeWorldStreamer.main.IsReady() &&
+                                             LargeWorldStreamer.main.IsWorldSettled());
+
+            WaitScreen.Remove(worldSettleItem);
+
+            WaitScreen.ManualWaitItem item = WaitScreen.Add("Joining Multiplayer Session");
             yield return Main.StartCoroutine(Main.StartSession());
-            yield return new WaitUntil(() => Main.InitialSyncCompleted);
             WaitScreen.Remove(item);
+
+            yield return new WaitUntil(() => Main.InitialSyncCompleted);
+
             SetLoadingComplete();
         }
 
@@ -75,7 +88,7 @@ namespace NitroxClient.MonoBehaviours
 
         public void Update()
         {
-            if (multiplayerSession.CurrentState.CurrentStage != MultiplayerSessionConnectionStage.Disconnected)
+            if (multiplayerSession.CurrentState.CurrentStage != MultiplayerSessionConnectionStage.DISCONNECTED)
             {
                 ProcessPackets();
             }
@@ -126,13 +139,14 @@ namespace NitroxClient.MonoBehaviours
 
             // UI.
             gameObject.AddComponent<LostConnectionModal>();
+            gameObject.AddComponent<PlayerKickedModal>();
         }
 
         public void StopCurrentSession()
         {
             SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
 
-            if (multiplayerSession.CurrentState.CurrentStage != MultiplayerSessionConnectionStage.Disconnected)
+            if (multiplayerSession.CurrentState.CurrentStage != MultiplayerSessionConnectionStage.DISCONNECTED)
             {
                 multiplayerSession.Disconnect();
             }
@@ -155,7 +169,10 @@ namespace NitroxClient.MonoBehaviours
             items.Clear();
 
             PlayerManager remotePlayerManager = NitroxServiceLocator.LocateService<PlayerManager>();
-            DiscordController.Main.InitDRPDiving(Main.multiplayerSession.AuthenticationContext.Username, remotePlayerManager.GetTotalPlayerCount(), Main.multiplayerSession.IpAddress + ":" + Main.multiplayerSession.ServerPort);
+            
+            LoadingScreenVersionText.DisableWarningText();
+            DiscordRPController.Main.InitializeInGame(Main.multiplayerSession.AuthenticationContext.Username, remotePlayerManager.GetTotalPlayerCount(), Main.multiplayerSession.IpAddress + ":" + Main.multiplayerSession.ServerPort);
+            PlayerChatManager.LoadChatKeyHint();
         }
 
         private void OnConsoleCommand_execute(NotificationCenter.Notification n)
@@ -184,6 +201,7 @@ namespace NitroxClient.MonoBehaviours
                 // If we just disconnected from a multiplayer session, then we need to kill the connection here.
                 // Maybe a better place for this, but here works in a pinch.
                 StopCurrentSession();
+                SceneCleaner.Open();
             }
         }
     }

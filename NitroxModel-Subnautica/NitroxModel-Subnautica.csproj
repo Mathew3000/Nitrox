@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>RELEASE,TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -42,7 +42,10 @@
     <Reference Include="Autofac.Configuration, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="LitJson, Version=1.0.5467.41753, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="LitJSON, Version=0.16.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\packages\LitJson.0.16.0\lib\net40\LitJSON.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\lib\protobuf-net.dll</HintPath>
     </Reference>
@@ -223,6 +226,7 @@
       <Link>Properties\AssemblyInfoCommon.cs</Link>
     </Compile>
     <Compile Include="DataStructures\GameLogic\Buildings\Rotation\Metadata\CorridorRotationMetadata.cs" />
+    <Compile Include="DataStructures\GameLogic\Buildings\Rotation\Metadata\BaseModuleRotationMetadata.cs" />
     <Compile Include="DataStructures\GameLogic\Buildings\Rotation\Metadata\MapRoomRotationMetadata.cs" />
     <Compile Include="DataStructures\GameLogic\Buildings\Rotation\SubnauticaRotationMetadataFactory.cs" />
     <Compile Include="DataStructures\GameLogic\Creatures\Actions\SerializableCreatureAction.cs" />

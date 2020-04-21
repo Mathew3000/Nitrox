@@ -1,39 +1,36 @@
 ﻿using NitroxServer.ConsoleCommands.Abstract;
-using NitroxServer.GameLogic.Players;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxServer.GameLogic;
 using NitroxModel.DataStructures.Util;
-using NitroxModel.Logger;
 
 namespace NitroxServer.ConsoleCommands
 {
     internal class DeopCommand : Command
     {
-        private readonly PlayerData playerData;
         private readonly PlayerManager playerManager;
 
-        public DeopCommand(PlayerData playerData, PlayerManager playerManager) : base("deop", Perms.ADMIN, "<name>")
+        public DeopCommand(PlayerManager playerManager) : base("deop", Perms.ADMIN, "{name}", "Removes admin rights from user")
         {
-            this.playerData = playerData;
             this.playerManager = playerManager;
         }
 
-        public override void RunCommand(string[] args, Optional<Player> player)
+        public override void RunCommand(string[] args, Optional<Player> sender)
         {
             string playerName = args[0];
             string message;
 
-            if (playerData.SetPermissions(playerName, Perms.PLAYER))
+            Optional<Player> targetPlayer = playerManager.GetPlayer(playerName);
+            if (targetPlayer.HasValue)
             {
-                message = "Updated " + playerName + " permissions to player";
+                targetPlayer.Value.Permissions = Perms.PLAYER;
+                message = $"Updated {playerName}\'s permissions to PLAYER";
             }
             else
             {
-                message = "Could not update permissions on unknown player " + playerName;
+                message = $"Could not update permissions of unknown player {playerName}";
             }
 
-            Log.Info(message);
-            SendServerMessageIfPlayerIsPresent(player, message);
+            Notify(sender, message);
         }
 
         public override bool VerifyArgs(string[] args)

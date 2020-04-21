@@ -24,12 +24,6 @@ namespace NitroxModel.DataStructures.GameLogic
         public TechType TechType { get; set; }
 
         [ProtoMember(5)]
-        public NitroxId SerializableParentBaseId {
-            get { return (ParentId.IsPresent()) ? ParentId.Get() : null; }
-            set { ParentId = Optional<NitroxId>.OfNullable(value); }
-        }
-
-        [ProtoIgnore]
         public Optional<NitroxId> ParentId { get; set; }
 
         [ProtoMember(6)]
@@ -51,30 +45,16 @@ namespace NitroxModel.DataStructures.GameLogic
         public NitroxId BaseId { get; set; }
 
         [ProtoMember(12, DynamicType = true)]
-        public RotationMetadata SerializableRotationMetadata
-        {
-            get { return (RotationMetadata.IsPresent()) ? RotationMetadata.Get() : null; }
-            set { RotationMetadata = Optional<RotationMetadata>.OfNullable(value); }
-        }
-
-        [ProtoIgnore]
         public Optional<RotationMetadata> RotationMetadata {get; set; }
         
         [ProtoMember(13, DynamicType = true)]
-        public BasePieceMetadata SerializableMetadata
-        {
-            get { return (Metadata.IsPresent()) ? Metadata.Get() : null; }
-            set { Metadata = Optional<BasePieceMetadata>.OfNullable(value); }
-        }
-
-        [ProtoIgnore]
         public Optional<BasePieceMetadata> Metadata { get; set; }
                 
         public BasePiece()
         {
-            ParentId = Optional<NitroxId>.Empty();
-            RotationMetadata = Optional<RotationMetadata>.Empty();
-            Metadata = Optional<BasePieceMetadata>.Empty();
+            ParentId = Optional.Empty;
+            RotationMetadata = Optional.Empty;
+            Metadata = Optional.Empty;
         }
 
         public BasePiece(NitroxId id, Vector3 itemPosition, Quaternion rotation, Vector3 cameraPosition, Quaternion cameraRotation, TechType techType, Optional<NitroxId> parentId, bool isFurniture, Optional<RotationMetadata> rotationMetadata)
@@ -90,7 +70,7 @@ namespace NitroxModel.DataStructures.GameLogic
             ConstructionAmount = 0.0f;
             ConstructionCompleted = false;
             RotationMetadata = rotationMetadata;
-            Metadata = Optional<BasePieceMetadata>.Empty();
+            Metadata = Optional.Empty;
         }
 
         public override string ToString()

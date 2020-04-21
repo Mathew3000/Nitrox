@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Helper;
 using NitroxClient.GameLogic.InitialSync.Base;
-using NitroxClient.GameLogic.Spawning;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.DataStructures.GameLogic;
@@ -27,27 +27,31 @@ namespace NitroxClient.GameLogic.InitialSync
             DependentProcessors.Add(typeof(VehicleInitialSyncProcessor)); // Equipment also includes vehicles modules
         }
 
-        public override void Process(InitialPlayerSync packet)
+        public override IEnumerator Process(InitialPlayerSync packet, WaitScreen.ManualWaitItem waitScreenItem)
         {
+            int totalEquippedItemsDone = 0;
+
             using (packetSender.Suppress<ItemContainerAdd>())
             {
                 foreach (EquippedItemData equippedItem in packet.EquippedItems)
                 {
+                    waitScreenItem.SetProgress(totalEquippedItemsDone, packet.EquippedItems.Count);
+
                     GameObject gameObject = SerializationHelper.GetGameObject(equippedItem.SerializedData);
                     NitroxEntity.SetNewId(gameObject, equippedItem.ItemId);
 
                     Pickupable pickupable = gameObject.RequireComponent<Pickupable>();
                     Optional<GameObject> opGameObject = NitroxEntity.GetObjectFrom(equippedItem.ContainerId);
 
-                    if (opGameObject.IsPresent())
+                    if (opGameObject.HasValue)
                     {
-                        GameObject owner = opGameObject.Get();
+                        GameObject owner = opGameObject.Value;
 
-                        Optional<Equipment> opEquipment = EquipmentHelper.GetBasedOnOwnersType(owner);
+                        Optional<Equipment> opEquipment = EquipmentHelper.FindEquipmentComponent(owner);
 
-                        if (opEquipment.IsPresent())
+                        if (opEquipment.HasValue)
                         {                            
-                            Equipment equipment = opEquipment.Get();
+                            Equipment equipment = opEquipment.Value;
                             InventoryItem inventoryItem = new InventoryItem(pickupable);
                             inventoryItem.container = equipment;
                             inventoryItem.item.Reparent(equipment.tr);
@@ -68,8 +72,13 @@ namespace NitroxClient.GameLogic.InitialSync
                     {
                         Log.Info("Could not find Container for " + gameObject.name);
                     }
+
+                    totalEquippedItemsDone++;
+                    yield return null;
                 }
             }
+
+            Log.Info("Recieved initial sync with " + totalEquippedItemsDone + " pieces of equipped items");
         }
     }
 }

@@ -1,9 +1,10 @@
-﻿using NitroxModel.Logger;
-using NitroxServer.ConsoleCommands.Abstract;
+﻿using NitroxServer.ConsoleCommands.Abstract;
 using NitroxServer.GameLogic;
 using System.Collections.Generic;
+using System.Linq;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.DataStructures.Util;
+using NitroxModel.Logger;
 
 namespace NitroxServer.ConsoleCommands
 {
@@ -11,24 +12,29 @@ namespace NitroxServer.ConsoleCommands
     {
         private readonly PlayerManager playerManager;
 
-        public ListCommand(PlayerManager playerManager) : base("list", Perms.PLAYER)
+        public ListCommand(PlayerManager playerManager) : base("list", Perms.PLAYER, "", "Shows who's online")
         {
             this.playerManager = playerManager;
         }
 
-        public override void RunCommand(string[] args, Optional<Player> player)
+        public override void RunCommand(string[] args, Optional<Player> sender)
         {
-            List<Player> players = playerManager.GetPlayers();
+            IEnumerable<Player> players = playerManager.GetConnectedPlayers();
+            string playerList = "List of players : " + string.Join(", ", players);
 
-            string playerList = "List Command Result: " + string.Join(", ", players);
-
-            if(players.Count == 0)
+            if (!players.Any())
             {
-                playerList += "No Players Online";
+                playerList += "No players online";
             }
 
-            Log.Info(playerList);
-            SendServerMessageIfPlayerIsPresent(player, playerList);
+            if (sender.HasValue)
+            {
+                SendMessageToPlayer(sender, playerList);
+            }
+            else
+            {
+                Log.Info(playerList);
+            }
         }
 
         public override bool VerifyArgs(string[] args)

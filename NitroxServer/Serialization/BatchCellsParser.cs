@@ -33,9 +33,9 @@ namespace NitroxServer.Serialization
             this.entitySpawnPointFactory = entitySpawnPointFactory;
             this.serializer = serializer;
 
-            surrogateTypes.Add("UnityEngine.Transform", typeof(Transform));
-            surrogateTypes.Add("UnityEngine.Vector3", typeof(Vector3));
-            surrogateTypes.Add("UnityEngine.Quaternion", typeof(Quaternion));
+            surrogateTypes.Add("UnityEngine.Transform", typeof(NitroxTransform));
+            surrogateTypes.Add("UnityEngine.Vector3", typeof(NitroxVector3));
+            surrogateTypes.Add("UnityEngine.Quaternion", typeof(NitroxQuaternion));
         }
 
         public List<EntitySpawnPoint> ParseBatchData(Int3 batchId)
@@ -52,13 +52,13 @@ namespace NitroxServer.Serialization
             List<string> errors = new List<string>();
             Optional<string> subnauticaPath = GameInstallationFinder.Instance.FindGame(errors);
 
-            if (subnauticaPath.IsEmpty())
+            if (!subnauticaPath.HasValue)
             {
                 Log.Info($"Could not locate Subnautica installation directory: {Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
                 return;
             }
 
-            string path = Path.Combine(subnauticaPath.Get(), "SNUnmanagedData", "Build18");
+            string path = Path.Combine(subnauticaPath.Value, "SNUnmanagedData", "Build18");
             string fileName = Path.Combine(path, pathPrefix, prefix + "batch-cells-" + batchId.X + "-" + batchId.Y + "-" + batchId.Z + suffix + ".bin");
 
             if (!File.Exists(fileName))
@@ -142,7 +142,7 @@ namespace NitroxServer.Serialization
                 {
 
                     AbsoluteEntityCell absoluteEntityCell = new AbsoluteEntityCell(batchId, cellId, level);
-                    Transform transform = gameObject.GetComponent<Transform>();
+                    NitroxTransform transform = gameObject.GetComponent<NitroxTransform>();
                     spawnPoints.AddRange(entitySpawnPointFactory.From(absoluteEntityCell, transform, gameObject));
                 }
             }

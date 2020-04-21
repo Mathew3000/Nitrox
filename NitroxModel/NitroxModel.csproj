@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>RELEASE,TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -50,6 +50,7 @@
     <Reference Include="protobuf-net">
       <HintPath>..\lib\protobuf-net.dll</HintPath>
     </Reference>
+    <Reference Include="System.configuration" />
     <Reference Include="UnityEngine">
       <HintPath>$(SubnauticaManaged)\UnityEngine.dll</HintPath>
     </Reference>
@@ -227,6 +228,7 @@
       <Link>Properties\AssemblyInfoCommon.cs</Link>
     </Compile>
     <Compile Include="Core\IAutoFacRegistrar.cs" />
+    <Compile Include="Core\NitroxEnvironment.cs" />
     <Compile Include="Core\NitroxServiceLocator.cs" />
     <Compile Include="DataStructures\GameLogic\Entities\UwePrefab.cs" />
     <Compile Include="DataStructures\GameLogic\Entities\UwePrefabFactory.cs" />
@@ -238,9 +240,12 @@
     <Compile Include="DataStructures\GameLogic\Buildings\Rotation\RotationMetadata.cs" />
     <Compile Include="DataStructures\GameLogic\Buildings\Rotation\RotationMetadataFactory.cs" />
     <Compile Include="DataStructures\GameLogic\Entities\UweWorldEntityFactory.cs" />
+    <Compile Include="DataStructures\GameLogic\InitialPDAData.cs" />
     <Compile Include="DataStructures\GameLogic\InitialRemotePlayerData.cs" />
-    <Compile Include="DataStructures\GameLogic\InitialPdaData.cs" />
     <Compile Include="DataStructures\GameLogic\InitialStoryGoalData.cs" />
+    <Compile Include="DataStructures\GameLogic\NitroxMatrix4x4.cs" />
+    <Compile Include="DataStructures\GameLogic\NitroxTransform.cs" />
+    <Compile Include="DataStructures\GameLogic\NitroxVector4.cs" />
     <Compile Include="DataStructures\GameLogic\PDAEntry.cs" />
     <Compile Include="DataStructures\GameLogic\ItemEquipment.cs" />
     <Compile Include="DataStructures\GameLogic\Entity.cs" />
@@ -251,15 +256,22 @@
     <Compile Include="DataStructures\GameLogic\Perms.cs" />
     <Compile Include="DataStructures\GameLogic\PlayerStatsData.cs" />
     <Compile Include="DataStructures\GameLogic\PowerType.cs" />
+    <Compile Include="DataStructures\GameLogic\NitroxQuaternion.cs" />
+    <Compile Include="DataStructures\GameLogic\NitroxVector3.cs" />
     <Compile Include="DataStructures\NitroxId.cs" />
     <Compile Include="DataStructures\Int3.cs" />
     <Compile Include="DataStructures\Surrogates\TechTypeSurrogate.cs" />
     <Compile Include="DataStructures\TechType.cs" />
+    <Compile Include="DataStructures\ThreadSafeCollection.cs" />
+    <Compile Include="DataStructures\ThreadSafeDictionary.cs" />
     <Compile Include="Discovery\InstallationFinders\EpicGamesInstallationFinder.cs" />
     <Compile Include="Discovery\IFindGameInstallation.cs" />
+    <Compile Include="Discovery\InstallationFinders\GameInCurrentDirectoryFinder.cs" />
     <Compile Include="Discovery\InstallationFinders\SteamGameRegistryFinder.cs" />
     <Compile Include="Discovery\InstallationFinders\ConfigFileGameFinder.cs" />
+    <Compile Include="Helper\Mathf.cs" />
     <Compile Include="Helper\PirateDetection.cs" />
+    <Compile Include="Helper\StringHelper.cs" />
     <Compile Include="Helper\TextureScaler.cs" />
     <Compile Include="Helper\IPHelper.cs" />
     <Compile Include="Logger\InGameLogger.cs" />
@@ -267,6 +279,8 @@
     <Compile Include="Packets\BedEnter.cs" />
     <Compile Include="Packets\EscapePodRadioRepair.cs" />
     <Compile Include="Packets\EscapePodRepair.cs" />
+    <Compile Include="Packets\IShortString.cs" />
+    <Compile Include="Packets\PingRenamed.cs" />
     <Compile Include="Packets\PlayerEquipmentAdded.cs" />
     <Compile Include="Packets\PlayerEquipmentRemoved.cs" />
     <Compile Include="Packets\RadioPlayPendingMessage.cs" />
@@ -334,8 +348,6 @@
     <Compile Include="Packets\OpenableStateChanged.cs" />
     <Compile Include="Packets\Packet.cs" />
     <Compile Include="Packets\PDAEncyclopediaEntryAdd.cs" />
-    <Compile Include="Packets\PDAEncyclopediaEntryRemove.cs" />
-    <Compile Include="Packets\PDAEncyclopediaEntryUpdate.cs" />
     <Compile Include="Packets\PDAEntryAdd.cs" />
     <Compile Include="Packets\PDAEntryProgress.cs" />
     <Compile Include="Packets\PDAEntryRemove.cs" />
@@ -368,6 +380,9 @@
     <Compile Include="Packets\VehicleNameChange.cs" />
     <Compile Include="Packets\WrapperPacket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Server\ServerConfig.cs" />
+    <Compile Include="Server\ServerConfigItem.cs" />
+    <Compile Include="Server\ServerGameMode.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

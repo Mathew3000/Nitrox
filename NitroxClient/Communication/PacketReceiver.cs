@@ -1,27 +1,26 @@
 ﻿using System.Collections.Generic;
-using NitroxClient.Map;
-using NitroxModel;
-using NitroxModel.DataStructures.GameLogic;
-using NitroxModel.Logger;
+using NitroxClient.Debuggers;
 using NitroxModel.Packets;
-using NitroxModel.DataStructures.Util;
 
 namespace NitroxClient.Communication
 {
     // TODO: Spinlocks don't seem to be necessary here, but I don't know for certain.
     public class PacketReceiver
     {
+        private readonly NetworkDebugger networkDebugger;
         private readonly Queue<Packet> receivedPackets;
 
-        public PacketReceiver()
+        public PacketReceiver(NetworkDebugger networkDebugger = null)
         {
             receivedPackets = new Queue<Packet>();
+            this.networkDebugger = networkDebugger;
         }
 
         public void PacketReceived(Packet packet)
         {
             lock (receivedPackets)
             {
+                networkDebugger?.PacketReceived(packet);
                 receivedPackets.Enqueue(packet);
             }
         }

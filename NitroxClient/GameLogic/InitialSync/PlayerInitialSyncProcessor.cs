@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.InitialSync.Base;
 using NitroxClient.MonoBehaviours;
@@ -21,12 +22,23 @@ namespace NitroxClient.GameLogic.InitialSync
             this.packetSender = packetSender;
         }
 
-        public override void Process(InitialPlayerSync packet)
+        public override IEnumerator Process(InitialPlayerSync packet, WaitScreen.ManualWaitItem waitScreenItem)
         {
             SetPlayerGameObjectId(packet.PlayerGameObjectId);
+            waitScreenItem.SetProgress(0.25f);
+            yield return null;
+
             AddStartingItemsToPlayer(packet.FirstTimeConnecting);
+            waitScreenItem.SetProgress(0.5f);
+            yield return null;
+
             SetPlayerStats(packet.PlayerStatsData);
+            waitScreenItem.SetProgress(0.75f);
+            yield return null;
+
             SetPlayerGameMode((GameModeOption)Enum.Parse(typeof(GameModeOption), packet.GameMode));
+            waitScreenItem.SetProgress(1f);
+            yield return null;
         }
 
         private void SetPlayerGameObjectId(NitroxId id)
@@ -57,6 +69,14 @@ namespace NitroxClient.GameLogic.InitialSync
                 using (packetSender.Suppress<PlayerStats>())
                 {
                     Player.main.oxygenMgr.AddOxygen(statsData.Oxygen);
+                    Player.main.liveMixin.health = statsData.Health;
+                    Player.main.GetComponent<Survival>().food = statsData.Food;
+                    Player.main.GetComponent<Survival>().water = statsData.Water;
+                    Player.main.infectedMixin.SetInfectedAmount(statsData.InfectionAmount);
+                    if (statsData.InfectionAmount > 0f)
+                    {
+                        Player.main.infectionRevealed = true;
+                    }
                 }
             }
         }

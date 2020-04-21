@@ -27,7 +27,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>RELEASE,TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -227,12 +227,13 @@
     </Compile>
     <Compile Include="Main.cs" />
     <Compile Include="Modules\NitroxPatchesModule.cs" />
+    <Compile Include="Patches\Dynamic\Base_CopyFrom_Patch.cs" />
+    <Compile Include="Patches\Dynamic\Constructable_SetState_Patch.cs" />
     <Compile Include="Patches\Dynamic\CrashHome_Spawn_Patch.cs" />
     <Compile Include="Patches\Dynamic\ArmsController_Start_Patch.cs" />
     <Compile Include="Patches\Dynamic\ArmsController_Update_Patch.cs" />
     <Compile Include="Patches\Dynamic\BaseAddBulkheadGhost_UpdatePlacement_Patch.cs" />
     <Compile Include="Patches\Dynamic\BaseAddModuleGhost_UpdatePlacement_Patch.cs" />
-    <Compile Include="Patches\Dynamic\BaseDeconstructable_Constructor_Patch.cs" />
     <Compile Include="Patches\Dynamic\BaseDeconstructable_Deconstructor_Patch.cs" />
     <Compile Include="Patches\Dynamic\BaseDeconstructable_Deconstruct_Patch.cs" />
     <Compile Include="Patches\Dynamic\BaseGhost_Finish_Patch.cs" />
@@ -300,11 +301,9 @@
     <Compile Include="Patches\Dynamic\IngameMenu_QuitGameAsync_Patch.cs" />
     <Compile Include="Patches\Dynamic\IngameMenu_QuitGame_Patch.cs" />
     <Compile Include="Patches\Dynamic\IngameMenu_QuitSubscreen_Patch.cs" />
-    <Compile Include="Patches\Dynamic\Inventory_OnApplicationQuit_Patch.cs" />
     <Compile Include="Patches\Dynamic\ItemsContainer_NotifyAddItem_Patch.cs" />
     <Compile Include="Patches\Dynamic\ItemsContainer_NotifyRemoveItem_Patch.cs" />
     <Compile Include="Patches\Dynamic\KnownTech_NotifyAdd_Patch.cs" />
-    <Compile Include="Patches\Dynamic\LargeWorldStreamer_Deinitialize.cs" />
     <Compile Include="Patches\Dynamic\MedicalCabinet_OnHandClick_Patch.cs" />
     <Compile Include="Patches\Dynamic\Openable_PlayOpenAnimation_Patch.cs" />
     <Compile Include="Patches\Dynamic\PDAEncyclopedia_Add_Patch.cs" />
@@ -332,6 +331,7 @@
     <Compile Include="Patches\Dynamic\SubNameInput_OnNameChange_Patch.cs" />
     <Compile Include="Patches\Dynamic\SubRoot_OnPlayerEntered_Patch.cs" />
     <Compile Include="Patches\Dynamic\SubRoot_OnTakeDamage_Patch.cs" />
+    <Compile Include="Patches\Dynamic\PingManager_NotifyRename_Patch.cs" />
     <Compile Include="Patches\Dynamic\ToggleLights_OnPoweredChanged_Patch.cs" />
     <Compile Include="Patches\Dynamic\ToggleLights_SetLightsActive_Patch.cs" />
     <Compile Include="Patches\Dynamic\uGUI_OptionsPanel_AddBindings_Patch.cs" />

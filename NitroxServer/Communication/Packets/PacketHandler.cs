@@ -1,18 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using NitroxModel.Logger;
 using NitroxModel.Packets;
 using NitroxModel.Packets.Processors.Abstract;
 using NitroxServer.Communication.Packets.Processors;
 using NitroxServer.Communication.Packets.Processors.Abstract;
 using NitroxServer.GameLogic;
-using NitroxServer.GameLogic.Entities;
-using NitroxServer.Serialization.World;
-using NitroxServer.GameLogic.Bases;
-using NitroxServer.GameLogic.Vehicles;
-using NitroxServer.GameLogic.Items;
-using NitroxServer.GameLogic.Players;
-using NitroxServer.GameLogic.Unlockables;
 using NitroxModel.Core;
 using NitroxModel.DataStructures.Util;
 using NitroxServer.Communication.NetworkingLayer;
@@ -21,8 +13,8 @@ namespace NitroxServer.Communication.Packets
 {
     public class PacketHandler
     {
-        private PlayerManager playerManager;
-        private DefaultServerPacketProcessor defaultServerPacketProcessor;
+        private readonly PlayerManager playerManager;
+        private readonly DefaultServerPacketProcessor defaultServerPacketProcessor;
 
         public PacketHandler(PlayerManager playerManager, DefaultServerPacketProcessor packetProcessor)
         {
@@ -33,7 +25,6 @@ namespace NitroxServer.Communication.Packets
         public void Process(Packet packet, NitroxConnection connection)
         {
             Player player = playerManager.GetPlayer(connection);
-
             if (player == null)
             {
                 ProcessUnauthenticated(packet, connection);
@@ -52,9 +43,9 @@ namespace NitroxServer.Communication.Packets
 
             Optional<object> opProcessor = NitroxServiceLocator.LocateOptionalService(packetProcessorType);
 
-            if (opProcessor.IsPresent())
+            if (opProcessor.HasValue)
             {
-                PacketProcessor processor = (PacketProcessor)opProcessor.Get();
+                PacketProcessor processor = (PacketProcessor)opProcessor.Value;
                 processor.ProcessPacket(packet, player);
             }
             else

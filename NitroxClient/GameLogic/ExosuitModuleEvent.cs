@@ -56,27 +56,27 @@ namespace NitroxClient.GameLogic
             // If cooldown of claw arm matches pickup cooldown, the exosuit arm performed a pickup action
             if (cooldown == clawArm.cooldownPickup)
             {
-                action = ExosuitArmAction.startUseTool;
+                action = ExosuitArmAction.START_USE_TOOL;
             } // Else if it matches the punch cooldown, it has punched something (or nothing but water, who knows)
             else if (cooldown == clawArm.cooldownPunch)
             {
-                action = ExosuitArmAction.altHit;
+                action = ExosuitArmAction.ALT_HIT;
             }
             else
             {
                 Log.Error("Cooldown time does not match pickup or punch time");
                 return;
             }
-            BroadcastArmAction(TechType.ExosuitClawArmModule, clawArm, action);
+            BroadcastArmAction(TechType.ExosuitClawArmModule, clawArm, action, Optional.Empty, Optional.Empty);
         }
 
         public void UseClaw(ExosuitClawArm clawArm, ExosuitArmAction armAction)
         {
-            if (armAction == ExosuitArmAction.startUseTool)
+            if (armAction == ExosuitArmAction.START_USE_TOOL)
             {
                 clawArm.animator.SetTrigger("use_tool");
             }
-            else if(armAction == ExosuitArmAction.altHit)
+            else if(armAction == ExosuitArmAction.ALT_HIT)
             {
                 clawArm.animator.SetTrigger("bash");
                 clawArm.fxControl.Play(0);
@@ -85,12 +85,12 @@ namespace NitroxClient.GameLogic
 
         public void UseDrill(ExosuitDrillArm drillArm, ExosuitArmAction armAction)
         {
-            if(armAction == ExosuitArmAction.startUseTool)
+            if(armAction == ExosuitArmAction.START_USE_TOOL)
             {
                 drillArm.animator.SetBool("use_tool", true);
                 drillArm.loop.Play();
             }
-            else if (armAction == ExosuitArmAction.endUseTool)
+            else if (armAction == ExosuitArmAction.END_USE_TOOL)
             {
                 drillArm.animator.SetBool("use_tool", false);
                 drillArm.ReflectionCall("StopEffects");
@@ -101,21 +101,28 @@ namespace NitroxClient.GameLogic
             }
         }       
 
-        public void BroadcastArmAction(TechType techType, IExosuitArm exosuitArm, ExosuitArmAction armAction, Optional<Vector3> opVector = null, Optional<Quaternion> opRotation = null)
+        public void BroadcastArmAction(TechType techType, IExosuitArm exosuitArm, ExosuitArmAction armAction, Optional<Vector3> opVector, Optional<Quaternion> opRotation)
         {
             NitroxId id = NitroxEntity.GetId(exosuitArm.GetGameObject());            
             ExosuitArmActionPacket packet = new ExosuitArmActionPacket(techType, id, armAction, opVector, opRotation);
             packetSender.Send(packet);
-        }        
+        }
+
+        public void BroadcastArmAction(TechType techType, IExosuitArm exosuitArm, ExosuitArmAction armAction)
+        {
+            NitroxId id = NitroxEntity.GetId(exosuitArm.GetGameObject());
+            ExosuitArmActionPacket packet = new ExosuitArmActionPacket(techType, id, armAction, Optional.Empty, Optional.Empty);
+            packetSender.Send(packet);
+        }
 
         public void UseGrappling(ExosuitGrapplingArm grapplingArm, ExosuitArmAction armAction, Optional<Vector3> opHitVector)
         {
-            if (armAction == ExosuitArmAction.endUseTool)
+            if (armAction == ExosuitArmAction.END_USE_TOOL)
             {
                 grapplingArm.animator.SetBool("use_tool", false);
                 grapplingArm.ReflectionCall("ResetHook");                
             }
-            else if (armAction == ExosuitArmAction.startUseTool)
+            else if (armAction == ExosuitArmAction.START_USE_TOOL)
             {
                 grapplingArm.animator.SetBool("use_tool", true);
                 if (!grapplingArm.rope.isLaunching)
@@ -131,13 +138,13 @@ namespace NitroxClient.GameLogic
                 Exosuit componentInParent = grapplingArm.GetComponentInParent<Exosuit>();
 
                 
-                if(opHitVector.IsEmpty())
+                if (!opHitVector.HasValue)
                 {
                     Log.Error("No vector given that contains the hook direction");
                     return;
                 }
                 
-                hook.rb.velocity = opHitVector.Get();
+                hook.rb.velocity = opHitVector.Value;
                 global::Utils.PlayFMODAsset(grapplingArm.shootSound, grapplingArm.front, 15f);
                 grapplingArm.ReflectionSet("grapplingStartPos", componentInParent.transform.position);
             }
@@ -149,17 +156,17 @@ namespace NitroxClient.GameLogic
 
         public void UseTorpedo(ExosuitTorpedoArm torpedoArm, ExosuitArmAction armAction, Optional<Vector3> opVector, Optional<Quaternion> opRotation)
         {            
-            if (armAction == ExosuitArmAction.startUseTool || armAction == ExosuitArmAction.altHit)
+            if (armAction == ExosuitArmAction.START_USE_TOOL || armAction == ExosuitArmAction.ALT_HIT)
             {
-                if(opVector.IsEmpty() || opRotation.IsEmpty())
+                if(!opVector.HasValue || !opRotation.HasValue)
                 {
                     Log.Error("Torpedo arm action shoot: no vector or rotation present");
                     return;
                 }
-                Vector3 forward = opVector.Get();
-                Quaternion rotation = opRotation.Get();
+                Vector3 forward = opVector.Value;
+                Quaternion rotation = opRotation.Value;
                 Transform silo = default(Transform);
-                if(armAction == ExosuitArmAction.startUseTool)
+                if(armAction == ExosuitArmAction.START_USE_TOOL)
                 {
                     silo = torpedoArm.siloFirst;
                 }
@@ -198,7 +205,7 @@ namespace NitroxClient.GameLogic
                 }
 
             }
-            else if (armAction == ExosuitArmAction.endUseTool)
+            else if (armAction == ExosuitArmAction.END_USE_TOOL)
             {
                 torpedoArm.animator.SetBool("use_tool", false);
             }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using NitroxClient.GameLogic.InitialSync.Base;
 using NitroxClient.MonoBehaviours;
@@ -24,26 +25,33 @@ namespace NitroxClient.GameLogic.InitialSync
             DependentProcessors.Add(typeof(VehicleInitialSyncProcessor)); // Remote players can be piloting vehicles.
         }
 
-        public override void Process(InitialPlayerSync packet)
+        public override IEnumerator Process(InitialPlayerSync packet, WaitScreen.ManualWaitItem waitScreenItem)
         {
+            int remotePlayersSynced = 0;
+
             foreach (InitialRemotePlayerData playerData in packet.RemotePlayerData)
             {
+                waitScreenItem.SetProgress(remotePlayersSynced, packet.RemotePlayerData.Count);
+
                 List<TechType> equippedTechTypes = playerData.EquippedTechTypes.Select(techType => techType.Enum()).ToList();
                 RemotePlayer player = remotePlayerManager.Create(playerData.PlayerContext, equippedTechTypes);
 
-                if (playerData.SubRootId.IsPresent())
+                if (playerData.SubRootId.HasValue)
                 {
-                    Optional<GameObject> sub = NitroxEntity.GetObjectFrom(playerData.SubRootId.Get());
+                    Optional<GameObject> sub = NitroxEntity.GetObjectFrom(playerData.SubRootId.Value);
 
-                    if (sub.IsPresent())
+                    if (sub.HasValue)
                     {
-                        player.SetSubRoot(sub.Get().GetComponent<SubRoot>());
+                        player.SetSubRoot(sub.Value.GetComponent<SubRoot>());
                     }
                     else
                     {
-                        Log.Error("Could not spawn remote player into subroot with id: " + playerData.SubRootId.Get());
+                        Log.Error("Could not spawn remote player into subroot with id: " + playerData.SubRootId.Value);
                     }
                 }
+
+                remotePlayersSynced++;
+                yield return null;
             }
         }
     }

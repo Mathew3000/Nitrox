@@ -2,6 +2,8 @@
 using NitroxModel.Helper;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.Packets;
+using NitroxModel.Logger;
+using System.Text;
 
 namespace NitroxServer.ConsoleCommands.Abstract
 {
@@ -11,19 +13,7 @@ namespace NitroxServer.ConsoleCommands.Abstract
         public string[] Alias { get; protected set; }
         public string Description { get; protected set; }
         public string ArgsDescription { get; protected set; }
-        public Perms RequiredPermLevel { get; protected set; } = Perms.ADMIN;
-
-        protected Command(string name, Perms requiredPermLevel) : this(name, requiredPermLevel, "", "", null)
-        {
-            RequiredPermLevel = requiredPermLevel;
-            Name = name;
-        }
-
-        protected Command(string name, Perms requiredPermLevel, string argsDescription) : this(name, requiredPermLevel, argsDescription, "", null)
-        {
-            ArgsDescription = argsDescription;
-            Name = name;
-        }
+        public Perms RequiredPermLevel { get; protected set; }
 
         protected Command(string name, Perms requiredPermLevel, string argsDescription, string description) : this(name, requiredPermLevel, argsDescription, "", null)
         {
@@ -36,6 +26,7 @@ namespace NitroxServer.ConsoleCommands.Abstract
         {
             Validate.NotNull(name);
             Validate.NotNull(argsDescription);
+            Validate.NotNull(description);
 
             Name = name;
             Description = string.IsNullOrEmpty(description) ? "No description" : description;
@@ -44,7 +35,7 @@ namespace NitroxServer.ConsoleCommands.Abstract
             Alias = alias ?? new string[0];
         }
 
-        public abstract void RunCommand(string[] args, Optional<Player> player);
+        public abstract void RunCommand(string[] args, Optional<Player> sender);
 
         public abstract bool VerifyArgs(string[] args);
 
@@ -55,22 +46,29 @@ namespace NitroxServer.ConsoleCommands.Abstract
 
         public string ToHelpText()
         {
-            string cmd = Name;
+            StringBuilder cmd = new StringBuilder(Name);
+
             if (Alias.Length > 0)
             {
-                cmd += "/" + string.Join("/", Alias);
+                cmd.AppendFormat("/{0}", string.Join("/", Alias));
             }
-            cmd += "  " + ArgsDescription;
+            cmd.AppendFormat(" {0}", ArgsDescription);
 
-            return $"{cmd, -40}  -  {Description}";
+            return $"{cmd,-35}  -  {Description}";
         }
 
-        public void SendServerMessageIfPlayerIsPresent(Optional<Player> player, string message)
+        public void SendMessageToPlayer(Optional<Player> player, string message)
         {
-            if (player.IsPresent())
+            if (player.HasValue)
             {
-                player.Get().SendPacket(new ChatMessage(ChatMessage.SERVER_ID, message));
+                player.Value.SendPacket(new ChatMessage(ChatMessage.SERVER_ID, message));
             }
+        }
+
+        public void Notify(Optional<Player> player, string message)
+        {
+            Log.Info(message);
+            SendMessageToPlayer(player, message);
         }
     }
 }

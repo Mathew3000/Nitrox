@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using NitroxClient.Communication;
 using NitroxClient.Communication.Abstract;
 using NitroxClient.GameLogic.Helper;
-using NitroxClient.GameLogic.Spawning;
 using NitroxClient.MonoBehaviours;
 using NitroxClient.Unity.Helper;
 using NitroxModel.Core;
@@ -41,14 +40,14 @@ namespace NitroxClient.GameLogic
         public void CreateVehicle(VehicleModel vehicleModel)
         {
             AddVehicle(vehicleModel);
-            CreateVehicle(vehicleModel.TechType.Enum(), vehicleModel.Id, vehicleModel.Position, vehicleModel.Rotation, vehicleModel.InteractiveChildIdentifiers, vehicleModel.DockingBayId, vehicleModel.Name, vehicleModel.HSB, vehicleModel.Colours);            
+            CreateVehicle(vehicleModel.TechType.Enum(), vehicleModel.Id, vehicleModel.Position, vehicleModel.Rotation, vehicleModel.InteractiveChildIdentifiers, vehicleModel.DockingBayId, vehicleModel.Name, vehicleModel.HSB, vehicleModel.Colours, vehicleModel.Health);            
         }
 
-        public void CreateVehicle(TechType techType, NitroxId id, Vector3 position, Quaternion rotation, Optional<List<InteractiveChildObjectIdentifier>> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours)
+        public void CreateVehicle(TechType techType, NitroxId id, Vector3 position, Quaternion rotation, IEnumerable<InteractiveChildObjectIdentifier> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours, float health)
         {
             if (techType == TechType.Cyclops)
             {
-                LightmappedPrefabs.main.RequestScenePrefab("cyclops", (go) => OnVehiclePrefabLoaded(techType, go, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours));
+                LightmappedPrefabs.main.RequestScenePrefab("cyclops", (go) => OnVehiclePrefabLoaded(techType, go, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours, health));
             }
             else
             {
@@ -56,7 +55,7 @@ namespace NitroxClient.GameLogic
 
                 if (techPrefab != null)
                 {
-                    OnVehiclePrefabLoaded(techType, techPrefab, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours);
+                    OnVehiclePrefabLoaded(techType, techPrefab, id, position, rotation, interactiveChildIdentifiers, dockingBayId, name, hsb, colours, health);
                 }
                 else
                 {
@@ -77,9 +76,9 @@ namespace NitroxClient.GameLogic
 
             Optional<GameObject> opGameObject = NitroxEntity.GetObjectFrom(vehicleModel.Id);
 
-            if (opGameObject.IsPresent())
+            if (opGameObject.HasValue)
             {
-                GameObject gameObject = opGameObject.Get();
+                GameObject gameObject = opGameObject.Value;
 
                 vehicle = gameObject.GetComponent<Vehicle>();
                 subRoot = gameObject.GetComponent<SubRoot>();
@@ -89,6 +88,7 @@ namespace NitroxClient.GameLogic
                 if (subRoot != null)
                 {
                     mvc = subRoot.gameObject.EnsureComponent<MultiplayerCyclops>();
+                    subRoot.GetComponent<LiveMixin>().health = vehicleModel.Health;
                 }
                 else if (vehicle != null)
                 {
@@ -111,6 +111,8 @@ namespace NitroxClient.GameLogic
                             Log.Error("Got exosuit vehicle but no ExosuitMovementData");
                         }
                     }
+
+                    vehicle.GetComponent<LiveMixin>().health = vehicleModel.Health;
                 }
 
                 if (mvc != null)
@@ -121,9 +123,9 @@ namespace NitroxClient.GameLogic
                 }
             }
 
-            if (player.IsPresent())
+            if (player.HasValue)
             {
-                RemotePlayer playerInstance = player.Get();
+                RemotePlayer playerInstance = player.Value;
                 playerInstance.SetVehicle(vehicle);
                 playerInstance.SetSubRoot(subRoot);
                 playerInstance.SetPilotingChair(subRoot?.GetComponentInChildren<PilotingChair>());
@@ -131,7 +133,7 @@ namespace NitroxClient.GameLogic
             }
         }
 
-        private void OnVehiclePrefabLoaded(TechType techType, GameObject prefab, NitroxId id, Vector3 spawnPosition, Quaternion spawnRotation, Optional<List<InteractiveChildObjectIdentifier>> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours)
+        private void OnVehiclePrefabLoaded(TechType techType, GameObject prefab, NitroxId id, Vector3 spawnPosition, Quaternion spawnRotation, IEnumerable<InteractiveChildObjectIdentifier> interactiveChildIdentifiers, Optional<NitroxId> dockingBayId, string name, Vector3[] hsb, Vector3[] colours, float health)
         {
             // Partially copied from SubConsoleCommand.OnSubPrefabLoaded
             GameObject gameObject = Utils.SpawnPrefabAt(prefab, null, spawnPosition);
@@ -146,9 +148,9 @@ namespace NitroxClient.GameLogic
             if (techType == TechType.Seamoth || techType == TechType.Exosuit)
             {
                 Vehicle vehicle = gameObject.GetComponent<Vehicle>();
-                if (dockingBayId.IsPresent())
+                if (dockingBayId.HasValue)
                 {
-                    GameObject dockingBayBase = NitroxEntity.RequireObjectFrom(dockingBayId.Get());
+                    GameObject dockingBayBase = NitroxEntity.RequireObjectFrom(dockingBayId.Value);
                     VehicleDockingBay dockingBay = dockingBayBase.GetComponentInChildren<VehicleDockingBay>();
                     dockingBay.DockVehicle(vehicle);
                 } else if(techType == TechType.Exosuit)
@@ -174,6 +176,8 @@ namespace NitroxClient.GameLogic
                     vehicle.vehicleColors = colour;
                     vehicle.subName.DeserializeColors(vehicle.vehicleColors);
                 }
+
+                vehicle.GetComponent<LiveMixin>().health = health;
             }
             else if(techType == TechType.Cyclops)
             {
@@ -189,14 +193,14 @@ namespace NitroxClient.GameLogic
                     subNameTarget.DeserializeColors(hsb);
                 }
 
+                target.GetComponent<LiveMixin>().health = health;
+
                 // Set internal and external lights
                 SetCyclopsModes(id);
             }
-            if (interactiveChildIdentifiers.IsPresent())
-            {
-                VehicleChildObjectIdentifierHelper.SetInteractiveChildrenIds(gameObject, interactiveChildIdentifiers.Get()); //Copy From ConstructorBeginCraftingProcessor
-            }            
 
+            VehicleChildObjectIdentifierHelper.SetInteractiveChildrenIds(gameObject, interactiveChildIdentifiers); //Copy From ConstructorBeginCraftingProcessor
+                  
             // Send event after everthing is created            
             if (VehicleCreated != null)
             {
@@ -216,19 +220,19 @@ namespace NitroxClient.GameLogic
         public void DestroyVehicle(NitroxId id, bool isPiloting) //Destroy Vehicle From network
         {
             Optional<GameObject> Object = NitroxEntity.GetObjectFrom(id);
-            if (Object.IsPresent())
+            if (Object.HasValue)
             {
-                GameObject T = Object.Get();
-                Vehicle vehicle = T.RequireComponent<Vehicle>();
+                GameObject go = Object.Value;
+                Vehicle vehicle = go.RequireComponent<Vehicle>();
 
                 if (isPiloting) //Check Remote Object Have Player inside
                 {
                     ushort pilot = ushort.Parse(vehicle.pilotId);
                     Optional<RemotePlayer> remotePilot = playerManager.Find(pilot);
 
-                    if (remotePilot.IsPresent()) // Get Remote Player Inside == vehicle.pilotId  Remove From Vehicle Before Destroy
+                    if (remotePilot.HasValue) // Get Remote Player Inside == vehicle.pilotId  Remove From Vehicle Before Destroy
                     {
-                        RemotePlayer remotePlayer = remotePilot.Get();
+                        RemotePlayer remotePlayer = remotePilot.Value;
                         remotePlayer.SetVehicle(null);
                         remotePlayer.SetSubRoot(null);
                         remotePlayer.SetPilotingChair(null);
@@ -264,12 +268,13 @@ namespace NitroxClient.GameLogic
 
         public void UpdateVehicleChildren(NitroxId id, List<InteractiveChildObjectIdentifier> interactiveChildrenGuids)
         {
-            Optional<GameObject> Object = NitroxEntity.GetObjectFrom(id);
-            if (Object.IsPresent())
+            Optional<GameObject> go = NitroxEntity.GetObjectFrom(id);
+            if (!go.HasValue)
             {
-                GameObject T = Object.Get();
-                VehicleChildObjectIdentifierHelper.SetInteractiveChildrenIds(T, interactiveChildrenGuids);
+                throw new Exception($"Tried to set children ids for vehicle but could not find it with Nitrox id '{id}'");
             }
+            
+            VehicleChildObjectIdentifierHelper.SetInteractiveChildrenIds(go.Value, interactiveChildrenGuids);
         }
 
         public void BroadcastCreatedVehicle(VehicleModel vehicle)
@@ -297,9 +302,9 @@ namespace NitroxClient.GameLogic
                     ushort pilot = ushort.Parse(vehicle.pilotId);
                     Optional<RemotePlayer> remotePilot = playerManager.Find(pilot);
 
-                    if (remotePilot.IsPresent())
+                    if (remotePilot.HasValue)
                     {
-                        RemotePlayer remotePlayer = remotePilot.Get();
+                        RemotePlayer remotePlayer = remotePilot.Value;
                         remotePlayer.SetVehicle(null);
                         remotePlayer.SetSubRoot(null);
                         remotePlayer.SetPilotingChair(null);
@@ -390,24 +395,18 @@ namespace NitroxClient.GameLogic
         public void SetOnPilotMode(NitroxId vehicleId, ushort playerId, bool isPiloting)
         {
             Optional<GameObject> opVehicle = NitroxEntity.GetObjectFrom(vehicleId);
-
-            if (opVehicle.IsPresent())
+            if (!opVehicle.HasValue)
             {
-                GameObject gameObject = opVehicle.Get();
-                Vehicle vehicle = gameObject.GetComponent<Vehicle>();
-
-                if (vehicle != null)
-                {
-                    if (isPiloting)
-                    {
-                        vehicle.pilotId = playerId.ToString();
-                    }
-                    else
-                    {
-                        vehicle.pilotId = string.Empty;
-                    }
-                }
+                return;
             }
+            GameObject gameObject = opVehicle.Value;
+            Vehicle vehicle = gameObject.GetComponent<Vehicle>();
+            if (vehicle == null)
+            {
+                return;
+            }
+            
+            vehicle.pilotId = isPiloting ? playerId.ToString() : string.Empty;
         }
 
         public void AddVehicle(VehicleModel vehicleModel)

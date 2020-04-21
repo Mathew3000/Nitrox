@@ -23,7 +23,6 @@ namespace NitroxClient.GameLogic
             this.localPlayer = localPlayer;
         }
 
-
         public void BroadcastItemAdd(InventoryItem item, GameObject gameObject)
         {
             NitroxId id = NitroxEntity.GetId(gameObject);
@@ -46,13 +45,19 @@ namespace NitroxClient.GameLogic
 
         public void AddItem(GameObject item, NitroxId containerId, bool silent = false)
         {
-            GameObject owner = NitroxEntity.RequireObjectFrom(containerId);
+            Optional<GameObject> owner = NitroxEntity.GetObjectFrom(containerId);
+
+            if (!owner.HasValue)
+            {
+                Log.Error("Could not place " + item.name + " in storageSlot container with id " + containerId);
+                return;
+            }
 
             // only need to watch EnergyMixin slots for now (only other type will be propulsion cannon)
-            Optional<EnergyMixin> opEnergy = Optional<EnergyMixin>.OfNullable(owner.GetComponent<EnergyMixin>());
-            if (opEnergy.IsPresent())
+            Optional<EnergyMixin> opEnergy = Optional.OfNullable(owner.Value.GetComponent<EnergyMixin>());
+            if (opEnergy.HasValue)
             {
-                EnergyMixin mixin = opEnergy.Get();
+                EnergyMixin mixin = opEnergy.Value;
                 StorageSlot slot = (StorageSlot)mixin.ReflectionGet("batterySlot");                
 
                 Pickupable pickupable = item.RequireComponent<Pickupable>();
@@ -74,20 +79,16 @@ namespace NitroxClient.GameLogic
                     mixin.ReflectionSet("allowedToPlaySounds", allowedToPlaySounds);
                 }
             }
-            else
-            {
-                Log.Error("Add storage slot item: Could not find BatterySource field on object " + owner.name);
-            }
         }
 
         public void RemoveItem(NitroxId ownerId, bool silent = false)
         {
             GameObject owner = NitroxEntity.RequireObjectFrom(ownerId);            
-            Optional<EnergyMixin> opMixin = Optional<EnergyMixin>.OfNullable(owner.GetComponent<EnergyMixin>());
+            Optional<EnergyMixin> opMixin = Optional.OfNullable(owner.GetComponent<EnergyMixin>());
             
-            if (opMixin.IsPresent())
+            if (opMixin.HasValue)
             {
-                EnergyMixin mixin = opMixin.Get();
+                EnergyMixin mixin = opMixin.Value;
                 StorageSlot slot = (StorageSlot)mixin.ReflectionGet("batterySlot");
 
                 // Suppress sound when silent is active

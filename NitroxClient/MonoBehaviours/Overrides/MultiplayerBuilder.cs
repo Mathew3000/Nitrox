@@ -1,4 +1,5 @@
 ﻿#pragma warning disable // Disable all warnings for copied file
+// ReSharper disable InconsistentNaming
 
 using System.Collections.Generic;
 using NitroxModel.DataStructures.Util;
@@ -8,6 +9,7 @@ using UnityEngine;
 using UWE;
 using NitroxModel.DataStructures.GameLogic.Buildings.Rotation;
 using NitroxModel_Subnautica.DataStructures.GameLogic.Buildings.Rotation;
+using NitroxModel_Subnautica.Helper.Int3;
 
 namespace NitroxClient.MonoBehaviours.Overrides
 {
@@ -182,13 +184,14 @@ namespace NitroxClient.MonoBehaviours.Overrides
                 Transform transform = componentInParent.transform;
                 transform.position = MultiplayerBuilder.placePosition;
                 transform.rotation = MultiplayerBuilder.placeRotation;
+
                 flag2 = componentInParent.UpdateGhostModel(MultiplayerBuilder.GetAimTransform(), MultiplayerBuilder.ghostModel, default(RaycastHit), out flag, componentInParent);
 
-                if(rotationMetadata.IsPresent())
+                if (rotationMetadata.HasValue)
                 {
-                    ApplyRotationMetadata(MultiplayerBuilder.ghostModel, rotationMetadata.Get());
+                    ApplyRotationMetadata(MultiplayerBuilder.ghostModel, rotationMetadata.Value);
                 }
-                
+
                 if (flag)
                 {
                     MultiplayerBuilder.renderers = MaterialExtensions.AssignMaterial(MultiplayerBuilder.ghostModel, MultiplayerBuilder.ghostStructureMaterial);
@@ -200,7 +203,7 @@ namespace NitroxClient.MonoBehaviours.Overrides
             {
                 List<GameObject> list = new List<GameObject>();
                 MultiplayerBuilder.GetObstacles(MultiplayerBuilder.placePosition, MultiplayerBuilder.placeRotation, MultiplayerBuilder.bounds, list);
-                flag2 = (list.Count == 0);
+                flag2 = list.Count == 0;
                 list.Clear();
             }
 
@@ -245,6 +248,14 @@ namespace NitroxClient.MonoBehaviours.Overrides
                 
                 ghostBase.SetCell(Int3.zero, (Base.CellType)mapRoomRotationMetadata.CellType);
                 mapRoom.ReflectionCall("RebuildGhostGeometry");
+            }
+            else if (component is BaseAddModuleGhost)
+            {
+                BaseModuleRotationMetadata baseModuleRotationMetadata = (rotationMetadata as BaseModuleRotationMetadata);
+                BaseAddModuleGhost module = (component as BaseAddModuleGhost);
+
+                module.anchoredFace = new Base.Face(baseModuleRotationMetadata.Cell.Global(), (Base.Direction)baseModuleRotationMetadata.Direction);
+                module.ReflectionCall("RebuildGhostGeometry");
             }
         }
 

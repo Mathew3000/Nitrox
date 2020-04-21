@@ -1,4 +1,7 @@
-﻿using NitroxModel.DataStructures.Util;
+﻿using System;
+using System.Collections.Generic;
+using NitroxClient.Unity.Helper;
+using NitroxModel.DataStructures.Util;
 using NitroxModel.Helper;
 using UnityEngine;
 
@@ -6,75 +9,30 @@ namespace NitroxClient.GameLogic.Helper
 {
     public class EquipmentHelper
     {
-        // Forgive me father for I have sinned
-        // someone replace this horrid code.... maybe loop through types and reflect them all OR circumvent the need for this
-
-        public static Optional<Equipment> GetBasedOnOwnersType(GameObject owner)
+        private static readonly List<Func<GameObject, Equipment>> equipmentFinders = new List<Func<GameObject, Equipment>>
         {
-            Charger charger = owner.GetComponent<Charger>();
+            o => (Equipment)o.GetComponent<Charger>().AliveOrNull()?.ReflectionGet("equipment"),
+            o => (Equipment)o.GetComponent<BaseNuclearReactor>().AliveOrNull()?.ReflectionGet("_equipment"),
+            o => o.GetComponent<CyclopsDecoyLoadingTube>().AliveOrNull()?.decoySlots,
+            o => o.GetComponent<Exosuit>().AliveOrNull()?.modules,
+            o => o.GetComponent<SeaMoth>().AliveOrNull()?.modules,
+            o => o.GetComponent<UpgradeConsole>().AliveOrNull()?.modules,
+            o => o.GetComponent<Vehicle>().AliveOrNull()?.modules,
+            o => o.GetComponent<VehicleUpgradeConsoleInput>().AliveOrNull()?.equipment,
+            o => string.Equals("Player", o.GetComponent<Player>().AliveOrNull()?.name, StringComparison.InvariantCulture) ? Inventory.main.equipment : null
+        };
 
-            if (charger != null)
+        public static Optional<Equipment> FindEquipmentComponent(GameObject owner)
+        {
+            foreach (Func<GameObject, Equipment> equipmentFinder in equipmentFinders)
             {
-                return Optional<Equipment>.Of((Equipment)charger.ReflectionGet("equipment"));
+                Equipment equipment = equipmentFinder(owner);
+                if (equipment != null)
+                {
+                    return Optional.Of(equipment);
+                }
             }
-
-            BaseNuclearReactor baseNuclearReactor = owner.GetComponent<BaseNuclearReactor>();
-
-            if (baseNuclearReactor != null)
-            {
-                return Optional<Equipment>.Of((Equipment)baseNuclearReactor.ReflectionGet("_equipment"));
-            }
-
-            CyclopsDecoyLoadingTube cyclopsDecoyLoadingTube = owner.GetComponent<CyclopsDecoyLoadingTube>();
-
-            if (cyclopsDecoyLoadingTube != null)
-            {
-                return Optional<Equipment>.Of(cyclopsDecoyLoadingTube.decoySlots);
-            }
-
-            Exosuit exosuit = owner.GetComponent<Exosuit>();
-
-            if (exosuit != null)
-            {
-                return Optional<Equipment>.Of(exosuit.modules);
-            }
-
-            SeaMoth seamoth = owner.GetComponent<SeaMoth>();
-
-            if (seamoth != null)
-            {
-                return Optional<Equipment>.Of(seamoth.modules);
-            }
-
-            UpgradeConsole upgradeConsole = owner.GetComponent<UpgradeConsole>();
-
-            if (upgradeConsole != null)
-            {
-                return Optional<Equipment>.Of(upgradeConsole.modules);
-            }
-
-            Vehicle vehicle = owner.GetComponent<Vehicle>();
-
-            if (vehicle != null)
-            {
-                return Optional<Equipment>.Of(vehicle.modules);
-            }
-
-            VehicleUpgradeConsoleInput vehicleUpgradeConsoleInput = owner.GetComponent<VehicleUpgradeConsoleInput>();
-
-            if (vehicleUpgradeConsoleInput != null)
-            {
-                return Optional<Equipment>.Of(vehicleUpgradeConsoleInput.equipment);
-            }
-
-            Player equipmentplayer = owner.GetComponent<Player>();
-
-            if (equipmentplayer != null || owner.name == "Player")
-            {
-                return Optional<Equipment>.Of(Inventory.main.equipment);
-            }
-
-            return Optional<Equipment>.Empty();
+            return Optional.Empty;
         }
     }
 }

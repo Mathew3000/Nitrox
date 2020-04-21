@@ -13,13 +13,13 @@ namespace NitroxClient.GameLogic.Spawning
 {
     public class SerializedEntitySpawner : IEntitySpawner
     {
-        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent)
+        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent, EntityCell cellRoot)
         {
             GameObject gameObject = SerializationHelper.GetGameObject(entity.SerializedGameObject);
-            gameObject.transform.position = entity.Position;
-            gameObject.transform.rotation = entity.Rotation;
-            gameObject.transform.localScale = entity.Scale;
-            
+            gameObject.transform.position = entity.Transform.Position;
+            gameObject.transform.rotation = entity.Transform.Rotation;
+            gameObject.transform.localScale = entity.Transform.LocalScale;
+
             if (entity.WaterParkId != null)
             {
                 AssignToWaterPark(gameObject, entity.WaterParkId);
@@ -30,7 +30,7 @@ namespace NitroxClient.GameLogic.Spawning
 
             NitroxEntity.SetNewId(gameObject, entity.Id);
 
-            return Optional<GameObject>.Of(gameObject);
+            return Optional.Of(gameObject);
         }
 
         public bool SpawnsOwnChildren()

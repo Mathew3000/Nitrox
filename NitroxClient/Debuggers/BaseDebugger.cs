@@ -108,7 +108,7 @@ namespace NitroxClient.Debuggers
 
             DebuggerTab tab;
             tabs.TryGetValue(name, out tab);
-            return Optional<DebuggerTab>.OfNullable(tab);
+            return Optional.OfNullable(tab);
         }
 
         public virtual void Update()
@@ -119,7 +119,7 @@ namespace NitroxClient.Debuggers
         /// <summary>
         /// Call this inside a <see cref="MonoBehaviour.OnGUI"/> method.
         /// </summary>
-        public void OnGUI()
+        public virtual void OnGUI()
         {
             if (!Enabled)
             {

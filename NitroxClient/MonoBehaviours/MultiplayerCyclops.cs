@@ -1,6 +1,5 @@
 ﻿using NitroxClient.GameLogic;
 using NitroxModel.Helper;
-using UnityEngine;
 
 namespace NitroxClient.MonoBehaviours
 {
@@ -36,7 +35,7 @@ namespace NitroxClient.MonoBehaviours
             base.SetSteeringWheel(yaw, pitch);
 
             ShipSide useShipSide = yaw > 0 ? ShipSide.Port : ShipSide.Starboard;
-            yaw = Mathf.Abs(yaw);
+            yaw = UnityEngine.Mathf.Abs(yaw);
             if (yaw > .1f && yaw >= previousAbsYaw)
             {
                 subTurnHandlers?.ForEach(turnHandler => turnHandler.OnSubTurn(useShipSide));

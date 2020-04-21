@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Net;
-using LiteNetLib;
+﻿using LiteNetLib;
 using LiteNetLib.Utils;
-using NitroxModel.DataStructures;
 using NitroxModel.Logger;
 using NitroxModel.Packets;
+using NitroxModel.Server;
 using NitroxServer.Communication.Packets;
-using NitroxServer.ConfigParser;
 using NitroxServer.GameLogic;
 using NitroxServer.GameLogic.Entities;
 
@@ -15,7 +11,6 @@ namespace NitroxServer.Communication.NetworkingLayer.LiteNetLib
 {
     public class LiteNetLibServer : NitroxServer
     {
-        private const string CONNECTION_KEY = "nitrox";
         private readonly NetManager server;
         private readonly EventBasedNetListener listener;
         private readonly NetPacketProcessor netPacketProcessor = new NetPacketProcessor();
@@ -26,10 +21,8 @@ namespace NitroxServer.Communication.NetworkingLayer.LiteNetLib
             listener = new EventBasedNetListener();
             server = new NetManager(listener);
         }
-        public override void Start()
+        public override bool Start()
         {
-            Log.Info("Using LiteNetLib as networking library");
-
             listener.PeerConnectedEvent += PeerConnected;
             listener.PeerDisconnectedEvent += PeerDisconnected;
             listener.NetworkReceiveEvent += NetworkDataReceived;
@@ -39,9 +32,13 @@ namespace NitroxServer.Communication.NetworkingLayer.LiteNetLib
             server.UnconnectedMessagesEnabled = true;
             server.UpdateTime = 15;
             server.UnsyncedEvents = true;
-            server.Start(portNumber);
-
+            if (!server.Start(portNumber))
+            {
+                return false;
+            }
+            
             isStopped = false;
+            return true;
         }
 
         public override void Stop()

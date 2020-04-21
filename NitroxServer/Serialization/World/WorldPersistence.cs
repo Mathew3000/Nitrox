@@ -11,13 +11,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NitroxServer.GameLogic.Unlockables;
-using NitroxServer.ConfigParser;
 using NitroxModel.DataStructures;
 using NitroxModel.Core;
 using NitroxModel.DataStructures.GameLogic.Entities;
-using NitroxServer.GameLogic.Entities.EntityBootstrappers;
 using NitroxServer.Serialization.Resources.Datastructures;
 using NitroxModel.DataStructures.GameLogic;
+using NitroxModel.Server;
 
 namespace NitroxServer.Serialization.World
 {
@@ -39,13 +38,14 @@ namespace NitroxServer.Serialization.World
                 PersistedWorldData persistedData = new PersistedWorldData();
                 persistedData.WorldData.ParsedBatchCells = world.BatchEntitySpawner.SerializableParsedBatches;
                 persistedData.WorldData.ServerStartTime = world.TimeKeeper.ServerStartTime;
-                persistedData.WorldData.EntityData = world.EntityData;
-                persistedData.BaseData = world.BaseData;
-                persistedData.WorldData.VehicleData = world.VehicleData;
-                persistedData.WorldData.InventoryData = world.InventoryData;
-                persistedData.PlayerData = world.PlayerData;
+                persistedData.WorldData.EntityData = EntityData.From(world.EntityManager.GetAllEntities());
+                persistedData.BaseData = BaseData.From(world.BaseManager.GetPartiallyConstructedPieces(), world.BaseManager.GetCompletedBasePieceHistory());
+                persistedData.WorldData.VehicleData = VehicleData.From(world.VehicleManager.GetVehicles());
+                persistedData.WorldData.InventoryData = InventoryData.From(world.InventoryManager.GetAllInventoryItems(), world.InventoryManager.GetAllStorageSlotItems());
+                persistedData.PlayerData = PlayerData.From(world.PlayerManager.GetAllPlayers());
                 persistedData.WorldData.GameData = world.GameData;
-                persistedData.WorldData.EscapePodData = world.EscapePodData;
+                persistedData.WorldData.StoryTimingData = StoryTimingData.From(world.EventTriggerer);
+                persistedData.WorldData.EscapePodData = EscapePodData.From(world.EscapePodManager.GetEscapePods());
 
                 if (!Directory.Exists(config.SaveName))
                 {
@@ -82,6 +82,11 @@ namespace NitroxServer.Serialization.World
         {
             try
             {
+                if (!Directory.Exists(config.SaveName))
+                {
+                    throw new DirectoryNotFoundException();
+                }
+
                 PersistedWorldData persistedData = new PersistedWorldData();
 
                 using (Stream stream = File.OpenRead(Path.Combine(config.SaveName, "BaseData.nitrox")))
@@ -122,37 +127,39 @@ namespace NitroxServer.Serialization.World
                 
 
                 World world = CreateWorld(persistedData.WorldData.ServerStartTime.Value,
-                                          persistedData.WorldData.EntityData,
-                                          persistedData.BaseData,
-                                          persistedData.WorldData.VehicleData,
-                                          persistedData.WorldData.InventoryData,
-                                          persistedData.PlayerData,
+                                          persistedData.WorldData.EntityData.Entities,
+                                          persistedData.BaseData.PartiallyConstructedPieces,
+                                          persistedData.BaseData.CompletedBasePieceHistory,
+                                          persistedData.WorldData.VehicleData.Vehicles,
+                                          persistedData.PlayerData.GetPlayers(),
+                                          persistedData.WorldData.InventoryData.InventoryItems,
+                                          persistedData.WorldData.InventoryData.StorageSlotItems,
                                           persistedData.WorldData.GameData,
                                           persistedData.WorldData.ParsedBatchCells,
-                                          persistedData.WorldData.EscapePodData,
+                                          persistedData.WorldData.EscapePodData.EscapePods,
+                                          persistedData.WorldData.StoryTimingData,
                                           config.GameMode);
 
-                return Optional<World>.Of(world);
+                return Optional.Of(world);
             }
-            catch (FileNotFoundException)
+            catch (DirectoryNotFoundException)
             {
                 Log.Info("No previous save file found - creating a new one.");
             }
             catch (Exception ex)
             {
-                Log.Info("Could not load world: " + ex.ToString() + " creating a new one.");
+                Log.Info("Could not load world: " + ex + " creating a new one.");
             }
 
-            return Optional<World>.Empty();
+            return Optional.Empty;
         }
 
         public World Load()
         {
             Optional<World> fileLoadedWorld = LoadFromFile();
-
-            if (fileLoadedWorld.IsPresent())
+            if (fileLoadedWorld.HasValue)
             {
-                return fileLoadedWorld.Get();
+                return fileLoadedWorld.Value;
             }
 
             return CreateFreshWorld();
@@ -160,19 +167,27 @@ namespace NitroxServer.Serialization.World
 
         private World CreateFreshWorld()
         {
-            World world = CreateWorld(DateTime.Now, new EntityData(), new BaseData(), new VehicleData(), new InventoryData(), new PlayerData(), new GameData() { PDAState = new PDAStateData(), StoryGoals = new StoryGoalData() }, new List<Int3>(), new EscapePodData(), config.GameMode);
-            return world;
+            return CreateWorld(
+                DateTime.Now, 
+                new List<Entity>(), new List<BasePiece>(), new List<BasePiece>(),
+                new List<VehicleModel>(), new List<Player>(), new List<ItemData>(),
+                new List<ItemData>(),
+                new GameData() { PDAState = new PDAStateData(), StoryGoals = new StoryGoalData() },
+                new List<Int3>(), new List<EscapePodModel>(), new StoryTimingData(), config.GameMode);
         }
 
         private World CreateWorld(DateTime serverStartTime,
-                                  EntityData entityData,
-                                  BaseData baseData,
-                                  VehicleData vehicleData,
-                                  InventoryData inventoryData,
-                                  PlayerData playerData,
+                                  List<Entity> entities,
+                                  List<BasePiece> partiallyConstructedPieces,
+                                  List<BasePiece> completedBasePieceHistory,
+                                  List<VehicleModel> vehicles,
+                                  List<Player> players,
+                                  List<ItemData> inventoryItems,
+                                  List<ItemData> storageSlotItems,
                                   GameData gameData,
                                   List<Int3> parsedBatchCells,
-                                  EscapePodData escapePodData,
+                                  List<EscapePodModel> escapePods,
+                                  StoryTimingData storyTimingData,
                                   string gameMode)
         {
             World world = new World();
@@ -180,19 +195,13 @@ namespace NitroxServer.Serialization.World
             world.TimeKeeper.ServerStartTime = serverStartTime;
 
             world.SimulationOwnershipData = new SimulationOwnershipData();
-            world.PlayerManager = new PlayerManager(playerData, config);
-            world.EntityData = entityData;
-            world.EventTriggerer = new EventTriggerer(world.PlayerManager);
-            world.BaseData = baseData;
-            world.VehicleData = vehicleData;
-            world.InventoryData = inventoryData;
-            world.PlayerData = playerData;
+            world.PlayerManager = new PlayerManager(players, config);
+            world.EventTriggerer = new EventTriggerer(world.PlayerManager, storyTimingData.ElapsedTime, storyTimingData.AuroraExplosionTime);
+            world.BaseManager = new BaseManager(partiallyConstructedPieces, completedBasePieceHistory);
+            world.InventoryManager = new InventoryManager(inventoryItems, storageSlotItems);
+            world.VehicleManager = new VehicleManager(vehicles, world.InventoryManager);
             world.GameData = gameData;
-            world.EscapePodData = escapePodData;
-            world.EscapePodManager = new EscapePodManager(escapePodData);
-
-            HashSet<TechType> serverSpawnedSimulationWhiteList = NitroxServiceLocator.LocateService<HashSet<TechType>>();
-            world.EntitySimulation = new EntitySimulation(world.EntityData, world.SimulationOwnershipData, world.PlayerManager, serverSpawnedSimulationWhiteList);
+            world.EscapePodManager = new EscapePodManager(escapePods);
             world.GameMode = gameMode;
             
             world.BatchEntitySpawner = new BatchEntitySpawner(NitroxServiceLocator.LocateService<EntitySpawnPointFactory>(),
@@ -202,6 +211,12 @@ namespace NitroxServer.Serialization.World
                                                               serializer,
                                                               NitroxServiceLocator.LocateService<Dictionary<TechType, IEntityBootstrapper>>(),
                                                               NitroxServiceLocator.LocateService<Dictionary<string, List<PrefabAsset>>>());
+
+            world.EntityManager = new EntityManager(entities, world.BatchEntitySpawner);
+
+            HashSet<TechType> serverSpawnedSimulationWhiteList = NitroxServiceLocator.LocateService<HashSet<TechType>>();
+            world.EntitySimulation = new EntitySimulation(world.EntityManager, world.SimulationOwnershipData, world.PlayerManager, serverSpawnedSimulationWhiteList);
+
 
             Log.Info("World GameMode: " + gameMode);
 

@@ -23,9 +23,10 @@ namespace NitroxModel.Packets
     public enum StoryEventType
     {
         PDA,
-        Radio,
-        Encyclopedia,
-        Story,
-        Extra
+        RADIO,
+        ENCYCLOPEDIA,
+        STORY,
+        EXTRA,
+        GOAL_UNLOCK
     }
 }

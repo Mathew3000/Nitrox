@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using NitroxModel.Logger;
 using NitroxServer.ConsoleCommands.Abstract;
@@ -8,17 +7,17 @@ using NitroxServer.GameLogic;
 using NitroxModel.Packets;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.DataStructures.Util;
+using System;
 
 namespace NitroxServer.ConsoleCommands.Processor
 {
     public class ConsoleCommandProcessor
     {
         private readonly Dictionary<string, Command> commands = new Dictionary<string, Command>();
-        private readonly PlayerManager playerManager;
+        private readonly char[] splitChar = new[] { ' ' };
 
-        public ConsoleCommandProcessor(IEnumerable<Command> cmds, PlayerManager playerManager)
+        public ConsoleCommandProcessor(IEnumerable<Command> cmds)
         {
-            this.playerManager = playerManager;
             foreach (Command cmd in cmds)
             {
                 if (commands.ContainsKey(cmd.Name))
@@ -27,7 +26,6 @@ namespace NitroxServer.ConsoleCommands.Processor
                 }
 
                 commands[cmd.Name] = cmd;
-
                 foreach (string alias in cmd.Alias)
                 {
                     if (commands.ContainsKey(alias))
@@ -46,10 +44,8 @@ namespace NitroxServer.ConsoleCommands.Processor
             {
                 return;
             }
-            
-            string[] parts = msg.Split()
-                                .Where(arg => !string.IsNullOrEmpty(arg))
-                                .ToArray();
+
+            string[] parts = msg.Split(splitChar, StringSplitOptions.RemoveEmptyEntries);
 
             Command cmd;
 
@@ -58,9 +54,9 @@ namespace NitroxServer.ConsoleCommands.Processor
                 string errorMessage = "Command Not Found: " + parts[0];
                 Log.Info(errorMessage);
 
-                if (player.IsPresent())
+                if (player.HasValue)
                 {
-                    player.Get().SendPacket(new ChatMessage(ChatMessage.SERVER_ID, errorMessage));
+                    player.Value.SendPacket(new ChatMessage(ChatMessage.SERVER_ID, errorMessage));
                 }
 
                 return;
@@ -72,7 +68,7 @@ namespace NitroxServer.ConsoleCommands.Processor
             }
             else
             {
-                cmd.SendServerMessageIfPlayerIsPresent(player, "You do not have the required permissions for this command!");
+                cmd.SendMessageToPlayer(player, "You do not have the required permissions for this command!");
             }
         }
 
@@ -86,9 +82,7 @@ namespace NitroxServer.ConsoleCommands.Processor
             }
             else
             {
-                string errorMessage = string.Format("Received Command Arguments for {0}: {1}", command.Name, command.ArgsDescription);
-                Log.Info(errorMessage);
-                command.SendServerMessageIfPlayerIsPresent(player, errorMessage);
+                command.Notify(player, string.Format("Received Command Arguments for {0}: {1}", command.Name, command.ArgsDescription));
             }
         }
     }

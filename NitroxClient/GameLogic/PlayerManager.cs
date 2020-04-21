@@ -26,13 +26,8 @@ namespace NitroxClient.GameLogic
         public Optional<RemotePlayer> Find(ushort playerId)
         {
             RemotePlayer player;
-
-            if (playersById.TryGetValue(playerId, out player))
-            {
-                return Optional<RemotePlayer>.Of(player);
-            }
-
-            return Optional<RemotePlayer>.Empty();
+            playersById.TryGetValue(playerId, out player);
+            return Optional.OfNullable(player);
         }
 
         internal Optional<RemotePlayer> FindByName(string playerName)
@@ -41,11 +36,16 @@ namespace NitroxClient.GameLogic
             {
                 if (player.PlayerName == playerName)
                 {
-                    return Optional<RemotePlayer>.Of(player);
+                    return Optional.Of(player);
                 }
             }
 
-            return Optional<RemotePlayer>.Empty();
+            return Optional.Empty;
+        }
+
+        internal IEnumerable<RemotePlayer> GetAll()
+        {
+            return playersById.Values;
         }
 
         public RemotePlayer Create(PlayerContext playerContext, List<TechType> equippedTechTypes)
@@ -60,7 +60,7 @@ namespace NitroxClient.GameLogic
             GameObject remotePlayerBody = CloneLocalPlayerBodyPrototype();
             RemotePlayer remotePlayer = new RemotePlayer(remotePlayerBody, playerContext, equippedTechTypes, playerModelManager);
 
-            DiscordController.Main.UpdateDRPDiving(GetTotalPlayerCount());
+            DiscordRPController.Main.UpdatePlayerCount(GetTotalPlayerCount());
 
             playersById.Add(remotePlayer.PlayerId, remotePlayer);
 
@@ -70,11 +70,11 @@ namespace NitroxClient.GameLogic
         public void RemovePlayer(ushort playerId)
         {
             Optional<RemotePlayer> opPlayer = Find(playerId);
-            if (opPlayer.IsPresent())
+            if (opPlayer.HasValue)
             {
-                opPlayer.Get().Destroy();
+                opPlayer.Value.Destroy();
                 playersById.Remove(playerId);
-                DiscordController.Main.UpdateDRPDiving(GetTotalPlayerCount());
+                DiscordRPController.Main.UpdatePlayerCount(GetTotalPlayerCount());
             }
         }
 

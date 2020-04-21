@@ -9,7 +9,7 @@ namespace NitroxClient.GameLogic.Spawning
 {
     public class DefaultEntitySpawner : IEntitySpawner
     {
-        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent)
+        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent, EntityCell cellRoot)
         {
             TechType techType = entity.TechType.Enum();
             GameObject prefab;
@@ -19,31 +19,33 @@ namespace NitroxClient.GameLogic.Spawning
                 prefab = CraftData.GetPrefabForTechType(techType, false);
                 if (prefab == null)
                 {
-                    return Optional<GameObject>.Of(Utils.CreateGenericLoot(techType));
+                    return Optional.Of(Utils.CreateGenericLoot(techType));
                 }
             }
 
             GameObject gameObject = Utils.SpawnFromPrefab(prefab, null);
-            gameObject.transform.position = entity.Position;
-            gameObject.transform.rotation = entity.Rotation;
-            gameObject.transform.localScale = entity.Scale;
-
-            if (parent.IsPresent())
-            {
-                gameObject.transform.SetParent(parent.Get().transform, false);
-            }
-
-            gameObject.SetActive(true);
+            gameObject.transform.position = entity.Transform.Position;
+            gameObject.transform.rotation = entity.Transform.Rotation;
+            gameObject.transform.localScale = entity.Transform.LocalScale;
 
             NitroxEntity.SetNewId(gameObject, entity.Id);
             CrafterLogic.NotifyCraftEnd(gameObject, techType);
 
-            if (parent.IsPresent() && parent.Get().GetComponent<LargeWorldEntityCell>())
+            if (parent.HasValue)
             {
-                LargeWorldEntity.Register(gameObject);
+                gameObject.transform.SetParent(parent.Value.transform, true);
             }
 
-            return Optional<GameObject>.Of(gameObject);
+            if (parent.HasValue && !parent.Value.GetComponent<LargeWorldEntityCell>())
+            {
+                LargeWorldEntity.Register(gameObject); // This calls SetActive on the GameObject
+            }
+            else
+            {
+                gameObject.SetActive(true);
+            }
+
+            return Optional.Of(gameObject);
         }
 
         public bool SpawnsOwnChildren()

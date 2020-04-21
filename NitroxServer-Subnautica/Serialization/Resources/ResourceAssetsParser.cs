@@ -15,7 +15,7 @@ namespace NitroxServer_Subnautica.Serialization.Resources
     {
         private static Dictionary<AssetIdentifier, uint> assetIdentifierToClassId = new Dictionary<AssetIdentifier, uint>();
         
-        private static Dictionary<string, uint> fileIdByResourcePath = new Dictionary<string, uint>();
+        private static Dictionary<string, int> fileIdByResourcePath = new Dictionary<string, int>();
         private static HashSet<string> parsedManifests = new HashSet<string>();
 
         private static PrefabPlaceholderExtractor prefabPlaceholderExtractor = new PrefabPlaceholderExtractor();
@@ -38,7 +38,7 @@ namespace NitroxServer_Subnautica.Serialization.Resources
 
             CalculateDependencyFileIds(basePath, "resources.assets");
 
-            uint rootAssetId = 0; // resources.assets is always considered to be the top level '0'
+            int rootAssetId = 0; // resources.assets is always considered to be the top level '0'
             ParseAssetManifest(basePath, "resources.assets", rootAssetId, resourceAssets);
 
             prefabPlaceholderExtractor.LoadInto(resourceAssets);
@@ -48,7 +48,7 @@ namespace NitroxServer_Subnautica.Serialization.Resources
             return resourceAssets;
         }
 
-        private static void ParseAssetManifest(string basePath, string fileName, uint fileId, ResourceAssets resourceAssets)
+        private static void ParseAssetManifest(string basePath, string fileName, int fileId, ResourceAssets resourceAssets)
         {
             if(parsedManifests.Contains(fileName))
             {
@@ -59,19 +59,19 @@ namespace NitroxServer_Subnautica.Serialization.Resources
 
             string path = Path.Combine(basePath, fileName);
 
-            using (FileStream resStream = new FileStream(path, FileMode.Open))
+            using (FileStream resStream = new FileStream(path, FileMode.Open, FileAccess.Read))
             using (AssetsFileReader reader = new AssetsFileReader(resStream))
             {
                 AssetsFile file = new AssetsFile(reader);
                 AssetsFileTable resourcesFileTable = new AssetsFileTable(file);
                 
-                foreach (AssetsFileDependency dependency in file.dependencies.pDependencies) 
+                foreach (AssetsFileDependency dependency in file.dependencies.dependencies) 
                 {
-                    uint dependencyFileId = fileIdByResourcePath[dependency.assetPath];
+                    int dependencyFileId = fileIdByResourcePath[dependency.assetPath];
                     ParseAssetManifest(basePath, dependency.assetPath, dependencyFileId, resourceAssets);
                 }
                 
-                foreach (AssetFileInfoEx assetFileInfo in resourcesFileTable.pAssetFileInfo)
+                foreach (AssetFileInfoEx assetFileInfo in resourcesFileTable.assetFileInfo)
                 {
                     reader.Position = assetFileInfo.absoluteFilePos;
 
@@ -96,15 +96,15 @@ namespace NitroxServer_Subnautica.Serialization.Resources
         {
             string path = Path.Combine(basePath, fileName);
 
-            using (FileStream resStream = new FileStream(path, FileMode.Open))
+            using (FileStream resStream = new FileStream(path, FileMode.Open, FileAccess.Read))
             using (AssetsFileReader reader = new AssetsFileReader(resStream))
             {
                 AssetsFile file = new AssetsFile(reader);
                 AssetsFileTable resourcesFileTable = new AssetsFileTable(file);
                 
-                uint fileId = 1;
+                int fileId = 1;
 
-                foreach (AssetsFileDependency dependency in file.dependencies.pDependencies)
+                foreach (AssetsFileDependency dependency in file.dependencies.dependencies)
                 {
                     fileIdByResourcePath.Add(dependency.assetPath, fileId);
                     fileId++;
@@ -116,32 +116,28 @@ namespace NitroxServer_Subnautica.Serialization.Resources
         {
             List<string> errors = new List<string>();
             Optional<string> subnauticaPath = GameInstallationFinder.Instance.FindGame(errors);
-
-            if (subnauticaPath.IsEmpty())
+            if (!subnauticaPath.HasValue)
             {
-                Log.Info($"Could not locate Subnautica installation directory: {Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
+                throw new DirectoryNotFoundException($"Could not locate Subnautica installation directory:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
             }
             
-            if (File.Exists(Path.Combine(subnauticaPath.Get(), "Subnautica_Data", "resources.assets")))
+            if (File.Exists(Path.Combine(subnauticaPath.Value, "Subnautica_Data", "resources.assets")))
             {
-                return Path.Combine(subnauticaPath.Get(), "Subnautica_Data");
+                return Path.Combine(subnauticaPath.Value, "Subnautica_Data");
             }
-            else if (File.Exists(Path.Combine("..", "resources.assets")))   //  SubServer => Subnautica/Subnautica_Data/SubServer
+            if (File.Exists(Path.Combine("..", "resources.assets")))   //  SubServer => Subnautica/Subnautica_Data/SubServer
             {
                 return Path.GetFullPath(Path.Combine(".."));
             }
-            else if (File.Exists(Path.Combine("..", "Subnautica_Data", "resources.assets")))   //  SubServer => Subnautica/SubServer
+            if (File.Exists(Path.Combine("..", "Subnautica_Data", "resources.assets")))   //  SubServer => Subnautica/SubServer
             {
                 return Path.GetFullPath(Path.Combine("..", "Subnautica_Data"));
             }
-            else if (File.Exists("resources.assets"))   //  SubServer/* => Subnautica/Subnautica_Data/
+            if (File.Exists("resources.assets"))   //  SubServer/* => Subnautica/Subnautica_Data/
             {
                 return Directory.GetCurrentDirectory();
             }
-            else
-            {
-                throw new FileNotFoundException("Make sure resources.assets is in current or parent directory and readable.");
-            }
+            throw new FileNotFoundException("Make sure resources.assets is in current or parent directory and readable.");
         }
     }
 }

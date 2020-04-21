@@ -20,10 +20,10 @@ namespace NitroxPatcher.Patches.Dynamic
         {
             if(torpedoType != null)
             {
-                ExosuitArmAction action = ExosuitArmAction.startUseTool;
+                ExosuitArmAction action = ExosuitArmAction.START_USE_TOOL;
                 if(siloTransform == __instance.siloSecond)
                 {
-                    action = ExosuitArmAction.altHit;
+                    action = ExosuitArmAction.ALT_HIT;
                 }
                 if(siloTransform != __instance.siloFirst && siloTransform != __instance.siloSecond)
                 {
@@ -32,8 +32,8 @@ namespace NitroxPatcher.Patches.Dynamic
                 NitroxServiceLocator.LocateService<ExosuitModuleEvent>().BroadcastArmAction(TechType.ExosuitTorpedoArmModule,
                     __instance, 
                     action, 
-                    Optional<Vector3>.Of(Player.main.camRoot.GetAimingTransform().forward), 
-                    Optional<Quaternion>.Of(Player.main.camRoot.GetAimingTransform().rotation)
+                    Optional.Of(Player.main.camRoot.GetAimingTransform().forward), 
+                    Optional.Of(Player.main.camRoot.GetAimingTransform().rotation)
                     );
             }
         }

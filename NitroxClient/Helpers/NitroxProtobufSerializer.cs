@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using ProtoBuf;
 using ProtoBuf.Meta;
 
@@ -16,13 +14,10 @@ namespace NitroxClient.Helpers
 
         private readonly Dictionary<Type, int> knownTypes;
 
-        public static NitroxProtobufSerializer Main;
-
         protected RuntimeTypeModel Model { get { return model; } }
 
         public NitroxProtobufSerializer(params string[] assemblies)
         {
-            Main = this;
             model = TypeModel.Create();
             knownTypes = (Dictionary<Type, int>)typeof(ProtobufSerializerPrecompiled).GetField("knownTypes", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
 

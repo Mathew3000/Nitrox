@@ -24,7 +24,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>RELEASE,TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -233,9 +233,17 @@
     </Compile>
     <Compile Include="ClientAutoFacRegistrar.cs" />
     <Compile Include="Communication\PacketReceiver.cs" />
+    <Compile Include="Communication\Packets\Processors\BedEnterProcessor.cs" />
+    <Compile Include="Communication\Packets\Processors\PingRenamedProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\RadioPlayPendingMessageProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\ExosuitArmActionProcessor.cs" />
+    <Compile Include="Debuggers\EntityDebugger.cs" />
+    <Compile Include="GameLogic\Bases\Spawning\BasePieceSpawnProcessor.cs" />
+    <Compile Include="GameLogic\Bases\Spawning\BaseLadderSpawnProcessor.cs" />
+    <Compile Include="GameLogic\Bases\Spawning\NoOpBasePieceSpawnProcessor.cs" />
+    <Compile Include="GameLogic\ChatUI\PlayerChatManager.cs" />
     <Compile Include="GameLogic\InitialSync\CyclopsInitialAsyncProcessor.cs" />
+    <Compile Include="GameLogic\InitialSync\PlayerModulesInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\StorageSlotsInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\StoryGoalInitialSyncProcessor.cs" />
     <Compile Include="Communication\Packets\Processors\CyclopsChangeSonarModeProcessor.cs" />
@@ -247,7 +255,6 @@
     <Compile Include="GameLogic\ExosuitModuleEvent.cs" />
     <Compile Include="GameLogic\InitialSync\InventoryItemsInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\EquippedItemInitialSyncProcessor.cs" />
-    <Compile Include="GameLogic\InitialSync\Base\AsyncInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\BuildingInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\Base\InitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\BasePieceMetadataInitialSyncProcessor.cs" />
@@ -259,9 +266,16 @@
     <Compile Include="GameLogic\InitialSync\PlayerInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\InitialSync\EscapePodInitialSyncProcessor.cs" />
     <Compile Include="GameLogic\PlayerModel\Equipment\ScubaSuitVisibiliyHandler.cs" />
+    <Compile Include="GameLogic\Spawning\CellRootSpawner.cs" />
     <Compile Include="GameLogic\StorageSlots.cs" />
     <Compile Include="Helpers\NitroxProtobufSerializer.cs" />
+    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChat.cs" />
+    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChatLogItem.cs" />
+    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChatPinButton.cs" />
+    <Compile Include="MonoBehaviours\Gui\InGame\PlayerKickedModal.cs" />
+    <Compile Include="MonoBehaviours\Gui\MainMenu\LoadingScreenVersionText.cs" />
     <Compile Include="MonoBehaviours\NitroxEntity.cs" />
+    <Compile Include="Unity\Helper\AssetBundleLoader.cs" />
     <Compile Include="Unity\Helper\RendererHelpers.cs" />
     <Compile Include="Communication\Abstract\IClient.cs" />
     <Compile Include="Communication\Packets\Processors\CyclopsDestroyedProcessor.cs" />
@@ -360,7 +374,7 @@
     <Compile Include="Debuggers\BaseDebugger.cs" />
     <Compile Include="Debuggers\NetworkDebugger.cs" />
     <Compile Include="Debuggers\SceneDebugger.cs" />
-    <Compile Include="MonoBehaviours\DiscordRP\DiscordController.cs" />
+    <Compile Include="MonoBehaviours\DiscordRP\DiscordRPController.cs" />
     <Compile Include="MonoBehaviours\DiscordRP\DiscordRpc.cs" />
     <Compile Include="GameLogic\AI.cs" />
     <Compile Include="GameLogic\Bases\Metadata\NoOpBasePieceMetadataProcessor.cs" />
@@ -369,9 +383,7 @@
     <Compile Include="GameLogic\Bases\Metadata\SignMetadataProcessor.cs" />
     <Compile Include="GameLogic\Building.cs" />
     <Compile Include="GameLogic\Bases\BuildThrottlingQueue.cs" />
-    <Compile Include="GameLogic\Chat.cs" />
     <Compile Include="GameLogic\ChatUI\ChatLogEntry.cs" />
-    <Compile Include="GameLogic\ChatUI\PlayerChat.cs" />
     <Compile Include="GameLogic\Constructor.cs" />
     <Compile Include="GameLogic\Crafting.cs" />
     <Compile Include="GameLogic\Cyclops.cs" />
@@ -446,7 +458,7 @@
     <Compile Include="GameLogic\Spawning\ReefbackEntitySpawner.cs" />
     <Compile Include="GameLogic\Spawning\CrashEntitySpawner.cs" />
     <Compile Include="GameLogic\Spawning\DefaultEntitySpawner.cs" />
-    <Compile Include="GameLogic\Spawning\EntitySpawner.cs" />
+    <Compile Include="GameLogic\Spawning\IEntitySpawner.cs" />
     <Compile Include="GameLogic\PlayerModel\Equipment\StillSuitVisibilityHandler.cs" />
     <Compile Include="GameLogic\Terrain.cs" />
     <Compile Include="GameLogic\Vehicles.cs" />
@@ -455,8 +467,7 @@
     <Compile Include="MonoBehaviours\AnimationSender.cs" />
     <Compile Include="MonoBehaviours\DiscordRP\DiscordJoinRequestGui.cs" />
     <Compile Include="MonoBehaviours\EntityPositionBroadcaster.cs" />
-    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChatEntry.cs" />
-    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChatLog.cs" />
+    <Compile Include="MonoBehaviours\Gui\Chat\PlayerChatInputField.cs" />
     <Compile Include="MonoBehaviours\Gui\HUD\RemotePlayerVitals.cs" />
     <Compile Include="MonoBehaviours\Gui\Helper\SmoothedValue.cs" />
     <Compile Include="MonoBehaviours\Gui\InGame\LostConnectionModal.cs" />

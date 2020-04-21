@@ -71,6 +71,7 @@ namespace NitroxClient.MonoBehaviours
             bool appliedThrottle = false;
             Vector3 leftArmPosition = new Vector3(0, 0, 0);
             Vector3 rightArmPosition = new Vector3(0, 0, 0);
+            float health;
 
             if (vehicle != null)
             {
@@ -78,6 +79,7 @@ namespace NitroxClient.MonoBehaviours
                 position = vehicle.gameObject.transform.position;
                 rotation = vehicle.gameObject.transform.rotation;
                 techType = CraftData.GetTechType(vehicle.gameObject);
+                health = vehicle.GetComponent<LiveMixin>().health;
 
                 Rigidbody rigidbody = vehicle.gameObject.GetComponent<Rigidbody>();
 
@@ -122,6 +124,7 @@ namespace NitroxClient.MonoBehaviours
                 id = NitroxEntity.GetId(sub.gameObject);
                 position = sub.gameObject.transform.position;
                 rotation = sub.gameObject.transform.rotation;
+                health = sub.GetComponent<LiveMixin>().health;
                 Rigidbody rigidbody = sub.GetComponent<Rigidbody>();
                 velocity = rigidbody.velocity;
                 angularVelocity = rigidbody.angularVelocity;
@@ -134,7 +137,7 @@ namespace NitroxClient.MonoBehaviours
             }
             else
             {
-                return Optional<VehicleMovementData>.Empty();
+                return Optional.Empty;
             }
 
             VehicleMovementData model = VehicleMovementFactory.GetVehicleMovementData(techType,
@@ -147,8 +150,9 @@ namespace NitroxClient.MonoBehaviours
                                                                                         steeringWheelPitch,
                                                                                         appliedThrottle,
                                                                                         leftArmPosition,
-                                                                                        rightArmPosition);
-            return Optional<VehicleMovementData>.Of(model);
+                                                                                        rightArmPosition,
+                                                                                        health);
+            return Optional.Of(model);
         }
     }
 }

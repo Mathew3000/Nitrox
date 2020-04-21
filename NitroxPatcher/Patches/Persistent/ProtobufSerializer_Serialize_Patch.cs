@@ -1,26 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using Harmony;
-using ProtoBuf;
 using System.IO;
+using System.Reflection;
+using Harmony;
 using NitroxClient.Helpers;
+using NitroxClient.MonoBehaviours;
+using NitroxModel.Core;
 
 namespace NitroxPatcher.Patches.Persistent
 {
     public class ProtobufSerializer_Serialize_Patch : NitroxPatch, IPersistentPatch
     {
-        static Type TARGET_TYPE = typeof(ProtobufSerializer);
-        static MethodInfo TARGET_METHOD = TARGET_TYPE.GetMethod("Serialize", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly Type TARGET_TYPE = typeof(ProtobufSerializer);
+        private static readonly MethodInfo TARGET_METHOD = TARGET_TYPE.GetMethod("Serialize", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        /// <summary>
+        ///     This patch is in a hot path so it needs this optimization.
+        /// </summary>
+        private static readonly NitroxProtobufSerializer serializer = NitroxServiceLocator.LocateServicePreLifetime<NitroxProtobufSerializer>();
 
         public static bool Prefix(Stream stream, object source, Type type)
         {
             int key;
-            if (NitroxProtobufSerializer.Main.NitroxTypes.TryGetValue(type, out key))
+            if (Multiplayer.Active && serializer.NitroxTypes.TryGetValue(type, out key))
             {
-                NitroxProtobufSerializer.Main.Serialize(stream, source);
+                serializer.Serialize(stream, source);
                 return false;
             }
 

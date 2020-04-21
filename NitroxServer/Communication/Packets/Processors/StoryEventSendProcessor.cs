@@ -1,4 +1,4 @@
-using NitroxModel.Packets;
+﻿using NitroxModel.Packets;
 using NitroxServer.Communication.Packets.Processors.Abstract;
 using NitroxServer.GameLogic;
 using NitroxServer.GameLogic.Unlockables;
@@ -18,11 +18,18 @@ namespace NitroxServer.Communication.Packets.Processors
 
         public override void Process(StoryEventSend packet, Player player)
         {
-            if (packet.StoryEventType == StoryEventType.Radio)
+            switch (packet.StoryEventType)
             {
-                storyGoalData.AddRadioMessage(packet.Key);
+                case StoryEventType.RADIO:
+                    storyGoalData.RadioQueue.Add(packet.Key);
+                    break;
+                case StoryEventType.GOAL_UNLOCK:
+                    storyGoalData.GoalUnlocks.Add(packet.Key);
+                    break;
+                default:
+                    storyGoalData.CompletedGoals.Add(packet.Key);
+                    break;
             }
-            storyGoalData.AddStoryGoal(packet.Key);
             playerManager.SendPacketToOtherPlayers(packet, player);
         }
     }

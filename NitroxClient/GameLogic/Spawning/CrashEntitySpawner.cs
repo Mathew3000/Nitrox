@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using NitroxClient.MonoBehaviours;
-using NitroxModel.DataStructures;
+﻿using NitroxClient.MonoBehaviours;
 using NitroxModel.DataStructures.GameLogic;
 using NitroxModel.DataStructures.Util;
 using NitroxModel.Helper;
@@ -13,19 +11,19 @@ namespace NitroxClient.GameLogic.Spawning
         /**
          * Crash fish are spawned by the CrashHome in the Monobehaviours Start method
          */
-        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent)
+        public Optional<GameObject> Spawn(Entity entity, Optional<GameObject> parent, EntityCell cellRoot)
         {
-            if (parent.IsPresent())
+            if (parent.HasValue)
             {
-                CrashHome crashHome = parent.Get().GetComponent<CrashHome>();
+                CrashHome crashHome = parent.Value.GetComponent<CrashHome>();
 
-                GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(crashHome.crashPrefab, Vector3.zero, Quaternion.Euler(-90f, 0f, 0f));
+                GameObject gameObject = Object.Instantiate(crashHome.crashPrefab, Vector3.zero, Quaternion.Euler(-90f, 0f, 0f));
                 gameObject.transform.SetParent(crashHome.transform, false);
                 NitroxEntity.SetNewId(gameObject, entity.Id);
-                ReflectionHelper.ReflectionSet<CrashHome>(crashHome, "crash", gameObject.GetComponent<Crash>());
+                crashHome.ReflectionSet("crash", gameObject.GetComponent<Crash>());
             }
 
-            return Optional<GameObject>.Empty();
+            return Optional.Empty;
         }
 
         public bool SpawnsOwnChildren()

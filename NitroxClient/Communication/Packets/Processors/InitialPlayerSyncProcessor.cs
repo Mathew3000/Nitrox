@@ -5,78 +5,78 @@ using NitroxClient.GameLogic.InitialSync.Base;
 using System;
 using NitroxModel.Logger;
 using NitroxClient.MonoBehaviours;
+using System.Collections;
+using NitroxClient.Communication.Abstract;
 
 namespace NitroxClient.Communication.Packets.Processors
 {
     public class InitialPlayerSyncProcessor : ClientPacketProcessor<InitialPlayerSync>
     {
-        private HashSet<InitialSyncProcessor> processors;
-        private HashSet<Type> alreadyRan = new HashSet<Type>();
+        private readonly IPacketSender packetSender;
+        private readonly HashSet<InitialSyncProcessor> processors;
+        private readonly HashSet<Type> alreadyRan = new HashSet<Type>();
         private InitialPlayerSync packet;
 
-        public InitialPlayerSyncProcessor(IEnumerable<InitialSyncProcessor> processors)
+        private WaitScreen.ManualWaitItem loadingMultiplayerWaitItem;
+        private WaitScreen.ManualWaitItem subWaitScreenItem;
+
+        private int cumulativeProcessorsRan;
+        private int processorsRanLastCycle;
+
+        public InitialPlayerSyncProcessor(IPacketSender packetSender, IEnumerable<InitialSyncProcessor> processors)
         {
+            this.packetSender = packetSender;
             this.processors = processors.ToSet();
         }
 
         public override void Process(InitialPlayerSync packet)
         {
             this.packet = packet;
-            ProcessInitialSyncPacket(this, null);
+            loadingMultiplayerWaitItem = WaitScreen.Add("Syncing Multiplayer World");
+            cumulativeProcessorsRan = 0;
+            Multiplayer.Main.StartCoroutine(ProcessInitialSyncPacket(this, null));
         }
         
-        private void ProcessInitialSyncPacket(object sender, EventArgs eventArgs)
+        private IEnumerator ProcessInitialSyncPacket(object sender, EventArgs eventArgs)
         {
-            bool moreProcessorsToRun;
-
-            do
+            // Some packets should not fire during game session join but only afterwards so that initialized/spawned game objects don't trigger packet sending again. 
+            using (packetSender.Suppress<PingRenamed>())
             {
-                int processorsRan = 0;
-                bool ranAsyncProcessor = false;
-
-                RunPendingProcessors(ref processorsRan, ref ranAsyncProcessor);
-
-                if(ranAsyncProcessor)
+                bool moreProcessorsToRun;
+                do
                 {
-                    // If we ran an async process, we'll have to wait for it to finish before we continue
-                    return;
-                }
+                    yield return Multiplayer.Main.StartCoroutine(RunPendingProcessors());
+                
+                    moreProcessorsToRun = alreadyRan.Count < processors.Count;
+                    if (moreProcessorsToRun && processorsRanLastCycle == 0)
+                    {
+                        throw new Exception("Detected circular dependencies in initial packet sync between: " + GetRemainingProcessorsText());
+                    }
+                } while (moreProcessorsToRun);
+            }
 
-                moreProcessorsToRun = (alreadyRan.Count < processors.Count);
-
-                if (moreProcessorsToRun && processorsRan == 0)
-                {
-                    throw new Exception("Detected circular dependencies in initial packet sync between: " + GetRemainingProcessorsText());
-                }
-            } while (moreProcessorsToRun);
-            
+            WaitScreen.Remove(loadingMultiplayerWaitItem);
             Multiplayer.Main.InitialSyncCompleted = true;
         }
 
-        private void RunPendingProcessors(ref int processorsRan, ref bool ranAsyncProcessor)
+        private IEnumerator RunPendingProcessors()
         {
-            processorsRan = 0;
-            ranAsyncProcessor = false;
+            processorsRanLastCycle = 0;
 
             foreach (InitialSyncProcessor processor in processors)
             {
                 if (IsWaitingToRun(processor.GetType()) && HasDependenciesSatisfied(processor))
                 {
+                    loadingMultiplayerWaitItem.SetProgress(cumulativeProcessorsRan, processors.Count);
+
                     Log.Info("Running " + processor.GetType());
                     alreadyRan.Add(processor.GetType());
-                    processorsRan++;
+                    processorsRanLastCycle++;
+                    cumulativeProcessorsRan++;
 
-                    if (processor is AsyncInitialSyncProcessor)
-                    {
-                        ((AsyncInitialSyncProcessor)processor).Completed += ProcessInitialSyncPacket;
-                        processor.Process(packet);
-                        ranAsyncProcessor = true;
-                        return;
-                    }
-                    else
-                    {
-                        processor.Process(packet);
-                    }
+                    subWaitScreenItem = WaitScreen.Add("Running " + processor.GetType().Name);
+                    yield return Multiplayer.Main.StartCoroutine(processor.Process(packet, subWaitScreenItem));
+                    WaitScreen.Remove(subWaitScreenItem);
                 }
             }
         }
