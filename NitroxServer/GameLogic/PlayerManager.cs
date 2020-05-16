@@ -64,6 +64,14 @@ namespace NitroxServer.GameLogic
             }
 
             string playerName = authenticationContext.Username;
+            Player player;
+            allPlayersByName.TryGetValue(playerName, out player);
+            if ((player?.IsPermaDeath == true) && serverConfig.IsGameMode("Hardcore"))
+            {
+                MultiplayerSessionReservationState rejectedState = MultiplayerSessionReservationState.REJECTED | MultiplayerSessionReservationState.HARDCORE_PLAYER_DEAD;
+                return new MultiplayerSessionReservation(correlationId, rejectedState);
+            }
+
             if (reservedPlayerNames.Contains(playerName))
             {
                 MultiplayerSessionReservationState rejectedState = MultiplayerSessionReservationState.REJECTED | MultiplayerSessionReservationState.UNIQUE_PLAYER_NAME_CONSTRAINT_VIOLATED;
@@ -79,8 +87,6 @@ namespace NitroxServer.GameLogic
                 reservedPlayerNames.Add(playerName);
             }
 
-            Player player;
-            allPlayersByName.TryGetValue(playerName, out player);
 
             bool hasSeenPlayerBefore = player != null;
             ushort playerId = hasSeenPlayerBefore ? player.Id : ++currentPlayerId;
@@ -90,6 +96,11 @@ namespace NitroxServer.GameLogic
 
             reservations.Add(reservationKey, playerContext);
             assetPackage.ReservationKey = reservationKey;
+
+            if (ConnectedPlayers().Count() == 1)
+            {
+                Server.Instance.EnablePeriodicSaving();
+            }
 
             return new MultiplayerSessionReservation(correlationId, playerId, reservationKey);
         }
@@ -109,6 +120,7 @@ namespace NitroxServer.GameLogic
             {
                 player = new Player(playerContext.PlayerId,
                     playerContext.PlayerName,
+                    false,
                     playerContext,
                     connection,
                     NitroxVector3.Zero,
@@ -153,6 +165,12 @@ namespace NitroxServer.GameLogic
             {
                 Player player = assetPackage.Player;
                 reservedPlayerNames.Remove(player.Name);
+
+                if (ConnectedPlayers().Count() == 0)
+                {
+                    Server.Instance.DisablePeriodicSaving();
+                    Server.Instance.Save();
+                }
             }
 
             assetsByConnection.Remove(connection);
