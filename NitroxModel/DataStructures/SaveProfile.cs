@@ -13,10 +13,21 @@ namespace NitroxModel.DataStructures
         /// The foldername where Nitrox SaveProfiles are stored
         /// </summary>
         public const string ProfileFolder = "Profiles";
+
+        /// <summary>
+        /// The basefolder for Nitrox related stuff
+        /// </summary>
+        public const string NitroxFolder = "NitroxData";
         #endregion
 
         #region StaticProperties
-        public static string SettingsPath { get; set; }
+        public static string SettingsPath
+        {
+            get
+            {
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), NitroxFolder);
+            }
+        }
 
         public static List<SaveProfile> Profiles { get; private set; }
         #endregion
